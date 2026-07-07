@@ -33,6 +33,9 @@ Controls HDV equipment and outputs the TS stream to BonDriver_Pipe.dll.
   - Pause/Resume synchronization
   - Purge on stop
 
+## Todo
+- [ ] Improving UI usability
+
 ## Build
 
 ```powershell
