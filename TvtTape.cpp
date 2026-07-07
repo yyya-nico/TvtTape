@@ -415,8 +415,8 @@ void CTvtTape::RegisterStatusItems()
     info.ID = STATUS_ITEM_BUTTONS;
     info.pszIDText = L"TvtTape.Buttons";
     info.pszName = L"TvtTape Control";
-    info.MinWidth = 150;
-    info.MaxWidth = 150;
+    info.MinWidth = 100;
+    info.MaxWidth = 180;
     info.DefaultWidth = 150;
     m_pApp->RegisterStatusItem(&info);
 
