@@ -1,0 +1,5 @@
+﻿LIBRARY "TvtTape"
+
+EXPORTS
+    CreateBonDriver
+    CreateBonStruct

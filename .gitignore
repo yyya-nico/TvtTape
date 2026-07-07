@@ -1,0 +1,26 @@
+# Build outputs
+/bin/
+/obj/
+/x64/
+/Debug/
+/Release/
+
+# Visual Studio workspace/cache
+/.vs/
+/.vscode/
+*.VC.db
+*.VC.VC.opendb
+*.suo
+*.opensdf
+*.sdf
+*.ipch
+
+# User-specific project settings
+*.user
+*.userosscache
+*.sln.docstates
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
