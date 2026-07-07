@@ -1,5 +1,5 @@
 # TvtTape Plugin
-Controls HDV equipment and outputs the TS stream to BonDriver_Pipe.dll.
+Controls D-VHS equipment and outputs the TS stream to BonDriver_Pipe.dll.
 
 ## Architecture (TvtPlay-style split)
 
