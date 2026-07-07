@@ -311,7 +311,7 @@ void CALLBACK CTvtTape::TimerProc(HWND, UINT, UINT_PTR idEvent, DWORD)
 {
     auto *pThis = g_TimerOwner;
     if (pThis && pThis->m_TimerID == idEvent)
-        pThis->UpdateStatus();
+        pThis->MonitorRecordingBitrate();
 }
 
 void CTvtTape::LoadSettings()
@@ -433,7 +433,6 @@ void CTvtTape::RedrawStatusItems()
 
 void CTvtTape::UpdateStatus()
 {
-    MonitorRecordingBitrate();
 
     if (!m_VcrDevice.IsOpen()) {
         m_DeviceNames.clear();
