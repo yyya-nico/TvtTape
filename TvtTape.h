@@ -49,7 +49,6 @@ private:
     void MonitorRecordingBitrate();
     bool ReopenDevice();
     bool ShowDeviceMenu(const TVTest::StatusItemMouseEventInfo *pInfo);
-    void ExecuteTransportAction(int index);
 
     CVcrDevice m_VcrDevice;
     CPipeControl m_PipeControl;

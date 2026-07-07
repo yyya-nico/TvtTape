@@ -22,6 +22,7 @@ Controls D-VHS equipment and outputs the TS stream to BonDriver_Pipe.dll.
   - Pause
   - Rewind (toggle: Rewind -> Play)
   - FastForward (toggle: FastForward -> Play)
+  - Record to PC (toggle: Start Record -> Stop Record)
 - Status display:
   - Current transport state
   - TimeCode (`HH:MM:SS:FF`)

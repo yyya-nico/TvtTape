@@ -10,24 +10,26 @@ namespace {
 constexpr wchar_t kPluginName[] = L"TvtTape";
 constexpr wchar_t kPluginDescription[] = L"VCR control plugin with BonDriver_Pipe integration";
 
-const wchar_t *const kControlTokensPlay[5] = {
+const wchar_t *const kControlTokensPlay[6] = {
     L"\xD83D\xDCFC\xFE0E ",
     L"\x23F9\xFE0E ",
     L"\x23EA\xFE0E ",
     L"\x25B6\xFE0E ",
     L"\x23E9\xFE0E",
+    L"\x23FA\xFE0E",
 };
 
-const wchar_t *const kControlTokensPause[5] = {
+const wchar_t *const kControlTokensPause[6] = {
     L"\xD83D\xDCFC\xFE0E ",
     L"\x23F9\xFE0E ",
     L"\x23EA\xFE0E ",
     L"\x23F8\xFE0E ",
     L"\x23E9\xFE0E",
+    L"\x23FA\xFE0E",
 };
 
-int g_ControlTokenWidthPlay[5] = {0, 0, 0, 0, 0};
-int g_ControlTokenWidthPause[5] = {0, 0, 0, 0, 0};
+int g_ControlTokenWidthPlay[6] = {0, 0, 0, 0, 0, 0};
+int g_ControlTokenWidthPause[6] = {0, 0, 0, 0, 0, 0};
 bool g_ControlTokenWidthPlayValid = false;
 bool g_ControlTokenWidthPauseValid = false;
 CTvtTape *g_TimerOwner = nullptr;
@@ -35,8 +37,8 @@ CTvtTape *g_TimerOwner = nullptr;
 const wchar_t *GetControlText(bool showPause)
 {
     return showPause
-        ? L"\xD83D\xDCFC\xFE0E \x23F9\xFE0E \x23EA\xFE0E \x23F8\xFE0E \x23E9\xFE0E"
-        : L"\xD83D\xDCFC\xFE0E \x23F9\xFE0E \x23EA\xFE0E \x25B6\xFE0E \x23E9\xFE0E";
+        ? L"\xD83D\xDCFC\xFE0E \x23F9\xFE0E \x23EA\xFE0E \x23F8\xFE0E \x23E9\xFE0E \x23FA\xFE0E"
+        : L"\xD83D\xDCFC\xFE0E \x23F9\xFE0E \x23EA\xFE0E \x25B6\xFE0E \x23E9\xFE0E \x23FA\xFE0E";
 }
 
 void UpdateControlTokenWidths(HDC hdc, bool showPause)
@@ -49,7 +51,7 @@ void UpdateControlTokenWidths(HDC hdc, bool showPause)
     const wchar_t *const *tokens = showPause ? kControlTokensPause : kControlTokensPlay;
 
     bool ok = true;
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 6; ++i) {
         SIZE size = {};
         const int len = static_cast<int>(wcslen(tokens[i]));
         if (GetTextExtentPoint32W(hdc, tokens[i], len, &size) && size.cx > 0) {
@@ -80,20 +82,20 @@ int HitTestControlIndex(const TVTest::StatusItemMouseEventInfo *pInfo, bool show
     if (x < 0)
         return -1;
 
-    int tokenWidth[5] = {0, 0, 0, 0, 0};
+    int tokenWidth[6] = {0, 0, 0, 0, 0, 0};
     const int *cachedWidth = showPause ? g_ControlTokenWidthPause : g_ControlTokenWidthPlay;
     const bool cacheValid = showPause ? g_ControlTokenWidthPauseValid : g_ControlTokenWidthPlayValid;
 
-    int fallbackWidth = width / 5;
+    int fallbackWidth = width / 6;
     if (fallbackWidth <= 0)
         fallbackWidth = 1;
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 6; ++i) {
         tokenWidth[i] = (cacheValid && cachedWidth[i] > 0) ? cachedWidth[i] : fallbackWidth;
     }
 
     int left = 0;
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 6; ++i) {
         const int right = left + tokenWidth[i];
         if (x >= left && x < right)
             return i;
@@ -241,7 +243,7 @@ bool CTvtTape::OnStatusItemDraw(TVTest::StatusItemDrawInfo *pInfo)
     if (pInfo->ID == STATUS_ITEM_BUTTONS) {
         const bool showPause = m_VcrDevice.GetTransportState() == CVcrDevice::TransportState::Play;
         UpdateControlTokenWidths(pInfo->hdc, showPause);
-        // [tape menu] [stop] [rew] [play/pause toggle] [ff]
+        // [tape menu] [stop] [rew] [play/pause toggle] [ff] [record]
         const wchar_t *controlText = GetControlText(showPause);
         DrawTextW(pInfo->hdc, controlText, -1, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
         return true;
@@ -290,11 +292,35 @@ bool CTvtTape::OnStatusItemMouseEvent(TVTest::StatusItemMouseEventInfo *pInfo)
             m_PipeControl.SetPaused(false);
         }
         break;
-    default:
+    case 4:
         if (m_VcrDevice.GetTransportState() == CVcrDevice::TransportState::FastForward)
             m_VcrDevice.Play();
         else
             m_VcrDevice.FastForward();
+        break;
+    case 5:
+        TVTest::RecordStatusInfo recordStatus = {};
+        if (!m_pApp->GetRecordStatus(&recordStatus)) {
+            break;
+        }
+
+        if (recordStatus.Status != TVTest::RECORD_STATUS_RECORDING) {
+            m_VcrDevice.Play();
+            m_PipeControl.SetPaused(false);
+            if (m_pApp->StartRecord()) {
+                m_pApp->AddLog(L"TvtTape: recording started", TVTest::LOG_TYPE_INFORMATION);
+            } else {
+                m_pApp->AddLog(L"TvtTape: failed to start recording", TVTest::LOG_TYPE_WARNING);
+            }
+        } else {
+            m_VcrDevice.Stop();
+            m_PipeControl.Purge();
+            if (m_pApp->StopRecord()) {
+                m_pApp->AddLog(L"TvtTape: recording stopped (bitrate was 0 for over 5 seconds)", TVTest::LOG_TYPE_WARNING);
+            } else {
+                m_pApp->AddLog(L"TvtTape: failed to stop recording after bitrate watchdog timeout", TVTest::LOG_TYPE_WARNING);
+            }
+        }
         break;
     }
     UpdateStatus();
@@ -389,9 +415,9 @@ void CTvtTape::RegisterStatusItems()
     info.ID = STATUS_ITEM_BUTTONS;
     info.pszIDText = L"TvtTape.Buttons";
     info.pszName = L"TvtTape Control";
-    info.MinWidth = 130;
-    info.MaxWidth = 130;
-    info.DefaultWidth = 130;
+    info.MinWidth = 150;
+    info.MaxWidth = 150;
+    info.DefaultWidth = 150;
     m_pApp->RegisterStatusItem(&info);
 
     TVTest::StatusItemSetInfo setInfo = {};
@@ -496,6 +522,8 @@ void CTvtTape::MonitorRecordingBitrate()
     }
 
     if (!m_RecordStopTriggered && (now - m_ZeroBitrateStartTick) >= 5000ULL) {
+        m_VcrDevice.Stop();
+        m_PipeControl.Purge();
         if (m_pApp->StopRecord()) {
             m_pApp->AddLog(L"TvtTape: recording stopped (bitrate was 0 for over 5 seconds)", TVTest::LOG_TYPE_WARNING);
         } else {
@@ -568,36 +596,6 @@ bool CTvtTape::ShowDeviceMenu(const TVTest::StatusItemMouseEventInfo *pInfo)
     }
 
     return true;
-}
-
-void CTvtTape::ExecuteTransportAction(int index)
-{
-    switch (index) {
-    case 0:
-        m_VcrDevice.Stop();
-        m_PipeControl.Purge();
-        break;
-    case 1:
-        m_VcrDevice.Play();
-        m_PipeControl.SetPaused(false);
-        break;
-    case 2:
-        m_VcrDevice.Pause();
-        m_PipeControl.SetPaused(true);
-        break;
-    case 3:
-        if (m_VcrDevice.GetTransportState() == CVcrDevice::TransportState::Rewind)
-            m_VcrDevice.Play();
-        else
-            m_VcrDevice.Rewind();
-        break;
-    default:
-        if (m_VcrDevice.GetTransportState() == CVcrDevice::TransportState::FastForward)
-            m_VcrDevice.Play();
-        else
-            m_VcrDevice.FastForward();
-        break;
-    }
 }
 
 TVTest::CTVTestPlugin *CreatePluginClass()
