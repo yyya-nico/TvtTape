@@ -32,6 +32,9 @@ Controls HDV equipment and outputs the TS stream to BonDriver_Pipe.dll.
 - BonDriver_Pipe integration:
   - Pause/Resume synchronization
   - Purge on stop
+- Auto-stop on TS input loss:
+  - Detects loss of TS input during recording (bitrate 0Mbps)
+  - Automatically stops recording if no input for 5+ seconds
 
 ## Todo
 - [ ] Improving UI usability
