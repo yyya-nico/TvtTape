@@ -437,13 +437,7 @@ void CTvtTape::UpdateStatus()
     if (!m_VcrDevice.IsOpen()) {
         m_DeviceNames.clear();
         if (m_VcrDevice.EnumDevices(&m_DeviceNames) && !m_DeviceNames.empty()) {
-            int index = 0;
-            if (m_SelectedDeviceIndex >= 0 && m_SelectedDeviceIndex < static_cast<int>(m_DeviceNames.size()))
-                index = m_SelectedDeviceIndex;
-
-            wchar_t stateBuf[256] = {};
-            swprintf_s(stateBuf, L"DEVICE DETECTED #%d %s", index, m_DeviceNames[index].c_str());
-            m_StateText = stateBuf;
+            m_StateText = L"DEVICE DETECTED";
         } else {
             m_StateText = L"NOT CONNECTED";
         }
@@ -463,14 +457,6 @@ void CTvtTape::UpdateStatus()
         m_TimeCodeText = tc;
     } else {
         m_TimeCodeText = L"--:--:--:--";
-    }
-
-    const int activeIndex = m_VcrDevice.GetActiveDeviceIndex();
-    const std::wstring activeName = m_VcrDevice.GetActiveDeviceName();
-    if (activeIndex >= 0 && !activeName.empty()) {
-        wchar_t stateBuf[256] = {};
-        swprintf_s(stateBuf, L"%s  #%d %s", m_VcrDevice.GetTransportStateText(), activeIndex, activeName.c_str());
-        m_StateText = stateBuf;
     }
 
     RedrawStatusItems();
