@@ -855,6 +855,14 @@ bool CTvtTape::IsRecording() const
     return m_pApp->GetRecordStatus(&recordStatus) && recordStatus.Status == TVTest::RECORD_STATUS_RECORDING;
 }
 
+bool CTvtTape::IsPowered()
+{
+    if (m_VcrDevice.IsOpen())
+        m_VcrDevice.UpdateDevicePowerState();
+
+    return m_VcrDevice.IsDevicePowerOn();
+}
+
 bool CTvtTape::ReopenDevice()
 {
     m_VcrDevice.Close();

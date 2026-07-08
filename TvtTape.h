@@ -33,7 +33,7 @@ public:
     const std::wstring &GetStateText() const { return m_StateText; }
     const std::wstring &GetDeviceText() const { return m_DeviceText; }
     const std::wstring &GetTimeCodeText() const { return m_TimeCodeText; }
-    bool IsPowered() const { return m_VcrDevice.IsDevicePowerOn(); }
+    bool IsPowered();
     bool IsPlaying() const { return m_VcrDevice.GetTransportState() == CVcrDevice::TransportState::Play; }
     bool IsRecording() const;
     bool DrawTransportIcon(HDC hdc, const RECT &rect, int iconIndex, COLORREF color) const;
