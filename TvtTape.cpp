@@ -418,7 +418,6 @@ bool CTvtTape::OnStatusItemNotify(TVTest::StatusItemEventInfo *pInfo)
         return true;
 
     case TVTest::STATUS_ITEM_EVENT_UPDATETIMER:
-        UpdateStatus();
         return true;
     }
 
