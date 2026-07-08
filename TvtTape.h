@@ -22,6 +22,7 @@ public:
     bool OnPluginEnable(bool fEnable) override;
     bool OnStatusItemDraw(TVTest::StatusItemDrawInfo *pInfo) override;
     bool OnStatusItemMouseEvent(TVTest::StatusItemMouseEventInfo *pInfo) override;
+    bool OnStatusItemNotify(TVTest::StatusItemEventInfo *pInfo) override;
 
 private:
     enum {

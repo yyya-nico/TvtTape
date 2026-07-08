@@ -128,7 +128,7 @@ bool CTvtTape::GetPluginInfo(TVTest::PluginInfo *pInfo)
         return false;
 
     pInfo->Type = TVTest::PLUGIN_TYPE_NORMAL;
-    pInfo->Flags = 0;
+    pInfo->Flags = TVTest::STATUS_ITEM_FLAG_TIMERUPDATE;
     pInfo->pszPluginName = kPluginName;
     pInfo->pszCopyright = L"2026";
     pInfo->pszDescription = kPluginDescription;
@@ -319,6 +319,15 @@ bool CTvtTape::OnStatusItemMouseEvent(TVTest::StatusItemMouseEventInfo *pInfo)
     }
     UpdateStatus();
     return true;
+}
+
+bool CTvtTape::OnStatusItemNotify(TVTest::StatusItemEventInfo *pInfo)
+{
+    switch (pInfo->Event) {
+    case TVTest::STATUS_ITEM_EVENT_UPDATETIMER:
+        return true;
+    }
+    return false;
 }
 
 LRESULT CALLBACK CTvtTape::EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void *pClientData)
