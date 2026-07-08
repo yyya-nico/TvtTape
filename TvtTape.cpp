@@ -224,19 +224,13 @@ bool CTvtTape::OnStatusItemDraw(TVTest::StatusItemDrawInfo *pInfo)
     if (!pInfo)
         return false;
 
-    RECT rc = pInfo->DrawRect;
-    rc.left += 4;
-    rc.right -= 4;
-    SetBkMode(pInfo->hdc, TRANSPARENT);
-    SetTextColor(pInfo->hdc, pInfo->Color);
-
     if (pInfo->ID == STATUS_ITEM_STATE) {
-        DrawTextW(pInfo->hdc, m_StateText.c_str(), -1, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+        m_pApp->ThemeDrawText(pInfo->pszStyle, pInfo->hdc, m_StateText.c_str(), pInfo->DrawRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS, pInfo->Color);
         return true;
     }
 
     if (pInfo->ID == STATUS_ITEM_TIMECODE) {
-        DrawTextW(pInfo->hdc, m_TimeCodeText.c_str(), -1, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+        m_pApp->ThemeDrawText(pInfo->pszStyle, pInfo->hdc, m_TimeCodeText.c_str(), pInfo->DrawRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE, pInfo->Color);
         return true;
     }
 
@@ -245,7 +239,7 @@ bool CTvtTape::OnStatusItemDraw(TVTest::StatusItemDrawInfo *pInfo)
         UpdateControlTokenWidths(pInfo->hdc, showPause);
         // [tape menu] [stop] [rew] [play/pause toggle] [ff] [record]
         const wchar_t *controlText = GetControlText(showPause);
-        DrawTextW(pInfo->hdc, controlText, -1, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+        m_pApp->ThemeDrawText(pInfo->pszStyle, pInfo->hdc, controlText, pInfo->DrawRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE, pInfo->Color);
         return true;
     }
 
