@@ -29,6 +29,7 @@ public:
 
     bool ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd);
     void ExecuteTransportAction(int action);
+    const std::wstring &GetStateText() const { return m_StateText; }
     const std::wstring &GetDeviceText() const { return m_DeviceText; }
     const std::wstring &GetTimeCodeText() const { return m_TimeCodeText; }
     bool IsPowered() const { return m_VcrDevice.IsDevicePowerOn(); }
@@ -55,7 +56,7 @@ private:
     std::wstring ResolveUiFilePath(const std::wstring &fileName) const;
     void InitializeStatusView();
     void LoadButtonBitmap();
-    void AdjustStatusLayout(int statusWidth);
+    void AdjustStatusLayout();
 
     void RegisterStatusItems();
     void SetStatusItemsVisible(bool visible);

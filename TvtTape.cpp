@@ -1,4 +1,4 @@
-#define TVTEST_PLUGIN_CLASS_IMPLEMENT
+﻿#define TVTEST_PLUGIN_CLASS_IMPLEMENT
 #include "TvtTape.h"
 #include "resource.h"
 
@@ -9,13 +9,12 @@ TVTest::CTVTestPlugin *CreatePluginClass();
 namespace {
 
 constexpr wchar_t kPluginName[] = L"TvtTape";
-constexpr wchar_t kPluginDescription[] = L"VCR control plugin with BonDriver_Pipe integration";
+constexpr wchar_t kPluginDescription[] = L"VCR 制御プラグイン BonDriver_Pipe 対応";
 constexpr wchar_t kDefaultIconBitmap[] = L"TvtTapeButtons.bmp";
-constexpr int kBitmapIconCount = 9;
-constexpr int kTimeCodeWidth = 112;
-constexpr int kMinDeviceWidth = 160;
-constexpr int kMaxDeviceWidth = 320;
-constexpr int kButtonWidthFallback = 40;
+constexpr int kBitmapIconCount = 10;
+constexpr int kStateWidth = 96;
+constexpr int kTimeCodeWidth = 80;
+constexpr int kButtonWidthFallback = 20;
 
 enum UiItemId {
     UI_ITEM_DEVICE = 1,
@@ -25,6 +24,7 @@ enum UiItemId {
     UI_ITEM_STOP,
     UI_ITEM_FF,
     UI_ITEM_RECORD,
+    UI_ITEM_STATE,
     UI_ITEM_TIMECODE,
 };
 
@@ -38,7 +38,8 @@ enum TransportAction {
 };
 
 enum TransportIconIndex {
-    ICON_POWER_OFF = 0,
+    ICON_VCR = 0,
+    ICON_POWER_OFF,
     ICON_POWER_ON,
     ICON_REW,
     ICON_PLAY,
@@ -60,17 +61,17 @@ const wchar_t *GetFallbackLabel(int action, bool showPause)
 {
     switch (action) {
     case TRANSPORT_POWER:
-        return showPause ? L"ON" : L"OFF";
+        return showPause ? L"電源オン" : L"電源オフ";
     case TRANSPORT_REW:
-        return L"REW";
+        return L"巻き戻し";
     case TRANSPORT_PLAY_PAUSE:
-        return showPause ? L"PAUSE" : L"PLAY";
+        return showPause ? L"一時停止" : L"再生";
     case TRANSPORT_STOP:
-        return L"STOP";
+        return L"停止";
     case TRANSPORT_FF:
-        return L"FF";
+        return L"早送り";
     case TRANSPORT_RECORD:
-        return showPause ? L"REC STOP" : L"REC";
+        return showPause ? L"録画停止" : L"録画";
     default:
         return L"";
     }
@@ -83,16 +84,15 @@ public:
         : CStatusItem(pStatus, UI_ITEM_DEVICE, width)
         , m_pOwner(pOwner)
     {
-        m_MinWidth = 96;
+        m_MinWidth = width;
     }
 
     void Draw(HDC hdc, const RECT *pRect) override
     {
-        std::wstring text = m_pOwner->GetDeviceText();
-        if (!text.empty())
-            text += L"  v";
-        RECT rc = *pRect;
-        ::DrawTextW(hdc, text.c_str(), -1, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+        if (!m_pOwner->DrawTransportIcon(hdc, *pRect, ICON_VCR)) {
+            RECT rc = *pRect;
+            ::DrawTextW(hdc, L"VCR", -1, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+        }
     }
 
     void OnLButtonDown(int, int) override
@@ -168,13 +168,33 @@ public:
         : CStatusItem(pStatus, UI_ITEM_TIMECODE, width)
         , m_pOwner(pOwner)
     {
-        m_MinWidth = 96;
+        m_MinWidth = 80;
     }
 
     void Draw(HDC hdc, const RECT *pRect) override
     {
         RECT rc = *pRect;
         ::DrawTextW(hdc, m_pOwner->GetTimeCodeText().c_str(), -1, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+    }
+
+private:
+    CTvtTape *m_pOwner;
+};
+
+class CTransportStateItem : public CStatusItem
+{
+public:
+    CTransportStateItem(CStatusView *pStatus, CTvtTape *pOwner, int width)
+        : CStatusItem(pStatus, UI_ITEM_STATE, width)
+        , m_pOwner(pOwner)
+    {
+        m_MinWidth = 72;
+    }
+
+    void Draw(HDC hdc, const RECT *pRect) override
+    {
+        RECT rc = *pRect;
+        ::DrawTextW(hdc, m_pOwner->GetStateText().c_str(), -1, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS);
     }
 
 private:
@@ -189,8 +209,7 @@ CTvtTape::CTvtTape()
     , m_ButtonIconSize(0)
     , m_StatusViewInitialized(false)
     , m_SelectedDeviceIndex(-1)
-    , m_StateText(L"INIT")
-    , m_DeviceText(L"VCR: initializing")
+    , m_StateText(L"初期化中...")
     , m_TimeCodeText(L"--:--:--:--")
     , m_ZeroBitrateStartTick(0)
     , m_RecordStopTriggered(false)
@@ -209,7 +228,7 @@ bool CTvtTape::GetPluginInfo(TVTest::PluginInfo *pInfo)
     pInfo->Type = TVTest::PLUGIN_TYPE_NORMAL;
     pInfo->Flags = TVTest::PLUGIN_FLAG_NONE;
     pInfo->pszPluginName = kPluginName;
-    pInfo->pszCopyright = L"2026";
+    pInfo->pszCopyright = L"2026 yyya_nico";
     pInfo->pszDescription = kPluginDescription;
     return true;
 }
@@ -238,17 +257,15 @@ bool CTvtTape::Initialize()
     if (m_pApp->IsPluginEnabled()) {
         m_VcrDevice.SetPreferredDeviceIndex(m_SelectedDeviceIndex);
         if (!m_VcrDevice.Open()) {
-            m_StateText = L"DEVICE OPEN FAILED";
-            m_DeviceText = L"VCR: open failed";
-            m_pApp->AddLog(L"TvtTape: failed to open VCR device", TVTest::LOG_TYPE_WARNING);
+            m_StateText = L"デバイスのオープンに失敗しました";
+            m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
         }
         g_TimerOwner = this;
         m_TimerID = ::SetTimer(nullptr, 0, m_PollIntervalMs, TimerProc);
         if (!m_TimerID)
-            m_pApp->AddLog(L"TvtTape: failed to start status poll timer", TVTest::LOG_TYPE_WARNING);
+            m_pApp->AddLog(L"TvtTape: ステータス監視タイマーの開始に失敗しました", TVTest::LOG_TYPE_WARNING);
     } else {
-        m_StateText = L"DISABLED";
-        m_DeviceText = L"VCR: disabled";
+        m_StateText = L"無効";
         m_TimeCodeText = L"--:--:--:--";
     }
 
@@ -278,15 +295,14 @@ bool CTvtTape::OnPluginEnable(bool fEnable)
         LoadButtonBitmap();
         m_VcrDevice.SetPreferredDeviceIndex(m_SelectedDeviceIndex);
         if (!m_VcrDevice.Open()) {
-            m_StateText = L"DEVICE OPEN FAILED";
-            m_DeviceText = L"VCR: open failed";
-            m_pApp->AddLog(L"TvtTape: failed to open VCR device", TVTest::LOG_TYPE_WARNING);
+            m_StateText = L"デバイスのオープンに失敗しました";
+            m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
         }
         if (!m_TimerID) {
             g_TimerOwner = this;
             m_TimerID = ::SetTimer(nullptr, 0, m_PollIntervalMs, TimerProc);
             if (!m_TimerID)
-                m_pApp->AddLog(L"TvtTape: failed to start status poll timer", TVTest::LOG_TYPE_WARNING);
+                m_pApp->AddLog(L"TvtTape: ステータス監視タイマーの開始に失敗しました", TVTest::LOG_TYPE_WARNING);
         }
     } else {
         if (m_TimerID) {
@@ -296,8 +312,7 @@ bool CTvtTape::OnPluginEnable(bool fEnable)
         if (g_TimerOwner == this)
             g_TimerOwner = nullptr;
         m_VcrDevice.Close();
-        m_StateText = L"DISABLED";
-        m_DeviceText = L"VCR: disabled";
+        m_StateText = L"無効";
         m_TimeCodeText = L"--:--:--:--";
     }
 
@@ -311,11 +326,11 @@ bool CTvtTape::OnStatusItemDraw(TVTest::StatusItemDrawInfo *pInfo)
         return false;
 
     if (pInfo->Flags & TVTest::STATUS_ITEM_DRAW_FLAG_PREVIEW) {
-        m_pApp->ThemeDrawText(pInfo->pszStyle, pInfo->hdc, L"TvtTape status bar", pInfo->DrawRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE, pInfo->Color);
+        m_pApp->ThemeDrawText(pInfo->pszStyle, pInfo->hdc, L"TvtTape ステータスバー", pInfo->DrawRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE, pInfo->Color);
         return true;
     }
 
-    AdjustStatusLayout(pInfo->ItemRect.right - pInfo->ItemRect.left);
+    AdjustStatusLayout();
     m_pApp->ThemeDrawBackground(L"status-bar.item", pInfo->hdc, pInfo->ItemRect);
 
     RECT hotRect = {};
@@ -342,7 +357,7 @@ bool CTvtTape::OnStatusItemMouseEvent(TVTest::StatusItemMouseEventInfo *pInfo)
     if (!pInfo || pInfo->ID != STATUS_ITEM_TRANSPORT_ROW)
         return false;
 
-    AdjustStatusLayout(pInfo->ItemRect.right - pInfo->ItemRect.left);
+    AdjustStatusLayout();
 
     CStatusView::MOUSE_ACTION action = CStatusView::MOUSE_ACTION_NONE;
     switch (pInfo->Action) {
@@ -497,13 +512,14 @@ void CTvtTape::InitializeStatusView()
     RECT margin = {4, 3, 4, 3};
     m_StatusView.SetItemMargin(margin);
 
-    new CDeviceStatusItem(&m_StatusView, this, 220);
+    new CDeviceStatusItem(&m_StatusView, this, kButtonWidthFallback);
     new CTransportButtonItem(&m_StatusView, this, UI_ITEM_POWER, TRANSPORT_POWER, kButtonWidthFallback);
     new CTransportButtonItem(&m_StatusView, this, UI_ITEM_REW, TRANSPORT_REW, kButtonWidthFallback);
     new CTransportButtonItem(&m_StatusView, this, UI_ITEM_PLAY_PAUSE, TRANSPORT_PLAY_PAUSE, kButtonWidthFallback);
     new CTransportButtonItem(&m_StatusView, this, UI_ITEM_STOP, TRANSPORT_STOP, kButtonWidthFallback);
     new CTransportButtonItem(&m_StatusView, this, UI_ITEM_FF, TRANSPORT_FF, kButtonWidthFallback);
-    new CTransportButtonItem(&m_StatusView, this, UI_ITEM_RECORD, TRANSPORT_RECORD, kButtonWidthFallback + 8);
+    new CTransportButtonItem(&m_StatusView, this, UI_ITEM_RECORD, TRANSPORT_RECORD, kButtonWidthFallback);
+    new CTransportStateItem(&m_StatusView, this, kStateWidth);
     new CTimeCodeStatusItem(&m_StatusView, this, kTimeCodeWidth);
 
     m_StatusViewInitialized = true;
@@ -541,7 +557,7 @@ void CTvtTape::LoadButtonBitmap()
     m_ButtonIconSize = iconHeight;
 }
 
-void CTvtTape::AdjustStatusLayout(int statusWidth)
+void CTvtTape::AdjustStatusLayout()
 {
     CStatusItem *pDevice = m_StatusView.GetItemByID(UI_ITEM_DEVICE);
     CStatusItem *pPower = m_StatusView.GetItemByID(UI_ITEM_POWER);
@@ -550,25 +566,21 @@ void CTvtTape::AdjustStatusLayout(int statusWidth)
     CStatusItem *pStop = m_StatusView.GetItemByID(UI_ITEM_STOP);
     CStatusItem *pFf = m_StatusView.GetItemByID(UI_ITEM_FF);
     CStatusItem *pRecord = m_StatusView.GetItemByID(UI_ITEM_RECORD);
+    CStatusItem *pState = m_StatusView.GetItemByID(UI_ITEM_STATE);
     CStatusItem *pTimeCode = m_StatusView.GetItemByID(UI_ITEM_TIMECODE);
-    if (!pDevice || !pPower || !pRew || !pPlayPause || !pStop || !pFf || !pRecord || !pTimeCode)
+    if (!pDevice || !pPower || !pRew || !pPlayPause || !pStop || !pFf || !pRecord || !pState || !pTimeCode)
         return;
 
-    RECT margin = {};
-    m_StatusView.GetItemMargin(&margin);
     const int buttonWidth = GetButtonWidth();
-    const int recordWidth = buttonWidth + 8;
-    const int marginWidth = (margin.left + margin.right) * m_StatusView.NumItems();
-    const int fixedWidth = buttonWidth * 5 + recordWidth + kTimeCodeWidth + marginWidth;
-    const int deviceWidth = std::clamp(statusWidth - fixedWidth, kMinDeviceWidth, kMaxDeviceWidth);
 
-    pDevice->SetWidth(deviceWidth);
+    pDevice->SetWidth(buttonWidth);
     pPower->SetWidth(buttonWidth);
     pRew->SetWidth(buttonWidth);
     pPlayPause->SetWidth(buttonWidth);
     pStop->SetWidth(buttonWidth);
     pFf->SetWidth(buttonWidth);
-    pRecord->SetWidth(recordWidth);
+    pRecord->SetWidth(buttonWidth);
+    pState->SetWidth(kStateWidth);
     pTimeCode->SetWidth(kTimeCodeWidth);
 }
 
@@ -580,7 +592,7 @@ void CTvtTape::RegisterStatusItems()
     info.Style = TVTest::STATUS_ITEM_STYLE_FORCEFULLROW;
     info.ID = STATUS_ITEM_TRANSPORT_ROW;
     info.pszIDText = L"TvtTape.TransportRow";
-    info.pszName = L"TvtTape Transport";
+    info.pszName = L"TvtTape ステータスバー";
     info.MinWidth = 0;
     info.MaxWidth = -1;
     info.DefaultWidth = TVTest::StatusItemWidthByFontSize(18);
@@ -619,14 +631,9 @@ void CTvtTape::UpdateStatus()
     if (!m_VcrDevice.IsOpen()) {
         m_DeviceNames.clear();
         if (m_VcrDevice.EnumDevices(&m_DeviceNames) && !m_DeviceNames.empty()) {
-            int index = 0;
-            if (0 <= m_SelectedDeviceIndex && m_SelectedDeviceIndex < static_cast<int>(m_DeviceNames.size()))
-                index = m_SelectedDeviceIndex;
-            m_DeviceText = L"VCR: " + m_DeviceNames[index];
-            m_StateText = L"DEVICE DETECTED";
+            m_StateText = L"デバイスが検出されました";
         } else {
-            m_DeviceText = L"VCR: not connected";
-            m_StateText = L"NOT CONNECTED";
+            m_StateText = L"接続されていません";
         }
 
         m_TimeCodeText = L"--:--:--:--";
@@ -636,9 +643,6 @@ void CTvtTape::UpdateStatus()
 
     m_VcrDevice.UpdateTransportState();
     m_StateText = m_VcrDevice.GetTransportStateText();
-
-    const std::wstring activeDevice = m_VcrDevice.GetActiveDeviceName();
-    m_DeviceText = activeDevice.empty() ? L"VCR: connected" : L"VCR: " + activeDevice;
 
     long hour = 0;
     long minute = 0;
@@ -692,9 +696,9 @@ void CTvtTape::MonitorRecordingBitrate()
         m_VcrDevice.Stop();
         m_PipeControl.Purge();
         if (m_pApp->StopRecord()) {
-            m_pApp->AddLog(L"TvtTape: recording stopped (bitrate was 0 for over 5 seconds)", TVTest::LOG_TYPE_WARNING);
+            m_pApp->AddLog(L"TvtTape: 録画停止 (ビットレート0Mbpsが5秒経過)", TVTest::LOG_TYPE_WARNING);
         } else {
-            m_pApp->AddLog(L"TvtTape: failed to stop recording after bitrate watchdog timeout", TVTest::LOG_TYPE_WARNING);
+            m_pApp->AddLog(L"TvtTape: 録画停止に失敗しました (ビットレート0Mbpsが5秒経過時)", TVTest::LOG_TYPE_WARNING);
         }
         m_RecordStopTriggered = true;
     }
@@ -738,7 +742,7 @@ bool CTvtTape::ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd)
     m_SelectedDeviceIndex = selected;
     SaveSettings();
     if (!ReopenDevice()) {
-        m_pApp->AddLog(L"TvtTape: selected device open failed", TVTest::LOG_TYPE_WARNING);
+        m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
         return false;
     }
 
@@ -753,7 +757,7 @@ void CTvtTape::ExecuteTransportAction(int action)
         if (!m_VcrDevice.IsOpen()) {
             m_VcrDevice.SetPreferredDeviceIndex(m_SelectedDeviceIndex);
             if (!m_VcrDevice.Open()) {
-                m_pApp->AddLog(L"TvtTape: failed to open VCR device for power control", TVTest::LOG_TYPE_WARNING);
+                m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました（電源制御用）", TVTest::LOG_TYPE_WARNING);
                 break;
             }
         }
@@ -762,17 +766,17 @@ void CTvtTape::ExecuteTransportAction(int action)
             TVTest::RecordStatusInfo recordStatus = {};
             if (m_pApp->GetRecordStatus(&recordStatus) && recordStatus.Status == TVTest::RECORD_STATUS_RECORDING) {
                 if (!m_pApp->StopRecord()) {
-                    m_pApp->AddLog(L"TvtTape: failed to stop recording before power off", TVTest::LOG_TYPE_WARNING);
+                    m_pApp->AddLog(L"TvtTape: 電源オフ前の録画停止に失敗しました", TVTest::LOG_TYPE_WARNING);
                 }
             }
             m_VcrDevice.Stop();
             m_PipeControl.Purge();
             if (!m_VcrDevice.SetDevicePower(false)) {
-                m_pApp->AddLog(L"TvtTape: failed to set device power off", TVTest::LOG_TYPE_WARNING);
+                m_pApp->AddLog(L"TvtTape: デバイスの電源オフに失敗しました", TVTest::LOG_TYPE_WARNING);
             }
         } else {
             if (!m_VcrDevice.SetDevicePower(true)) {
-                m_pApp->AddLog(L"TvtTape: failed to set device power on", TVTest::LOG_TYPE_WARNING);
+                m_pApp->AddLog(L"TvtTape: デバイスの電源オンに失敗しました", TVTest::LOG_TYPE_WARNING);
             }
         }
         break;
@@ -816,24 +820,24 @@ void CTvtTape::ExecuteTransportAction(int action)
                 m_VcrDevice.Stop();
                 m_PipeControl.Purge();
                 if (!m_pApp->StopRecord()) {
-                    m_pApp->AddLog(L"TvtTape: failed to stop recording", TVTest::LOG_TYPE_WARNING);
+                    m_pApp->AddLog(L"TvtTape: 録画停止に失敗しました", TVTest::LOG_TYPE_WARNING);
                 }
             } else {
                 if (!m_VcrDevice.IsOpen()) {
                     m_VcrDevice.SetPreferredDeviceIndex(m_SelectedDeviceIndex);
                     if (!m_VcrDevice.Open()) {
-                        m_pApp->AddLog(L"TvtTape: failed to open VCR device for recording", TVTest::LOG_TYPE_WARNING);
+                        m_pApp->AddLog(L"TvtTape: 録画用の VCR デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
                         break;
                     }
                 }
                 if (!m_VcrDevice.IsDevicePowerOn() && !m_VcrDevice.SetDevicePower(true)) {
-                    m_pApp->AddLog(L"TvtTape: failed to power on VCR device for recording", TVTest::LOG_TYPE_WARNING);
+                    m_pApp->AddLog(L"TvtTape: 録画用の VCR デバイスの電源オンに失敗しました", TVTest::LOG_TYPE_WARNING);
                     break;
                 }
                 m_VcrDevice.Play();
                 m_PipeControl.SetPaused(false);
                 if (!m_pApp->StartRecord()) {
-                    m_pApp->AddLog(L"TvtTape: failed to start recording", TVTest::LOG_TYPE_WARNING);
+                    m_pApp->AddLog(L"TvtTape: 録画開始に失敗しました", TVTest::LOG_TYPE_WARNING);
                 }
             }
         }
@@ -867,7 +871,7 @@ bool CTvtTape::DrawTransportIcon(HDC hdc, const RECT &rect, int iconIndex) const
 
     return DrawUtil::DrawMonoColorDIB(
         hdc,
-        rect.left + ((rect.right - rect.left) - m_ButtonIconSize) / 2,
+        rect.left,
         rect.top + ((rect.bottom - rect.top) - m_ButtonIconSize) / 2,
         m_ButtonIcons.GetHandle(),
         iconIndex * m_ButtonIconSize,
@@ -879,7 +883,7 @@ bool CTvtTape::DrawTransportIcon(HDC hdc, const RECT &rect, int iconIndex) const
 
 int CTvtTape::GetButtonWidth() const
 {
-    return m_ButtonIconSize > 0 ? ((std::max))(m_ButtonIconSize + 10, 30) : kButtonWidthFallback;
+    return m_ButtonIconSize > 0 ? m_ButtonIconSize + 2 : kButtonWidthFallback;
 }
 
 TVTest::CTVTestPlugin *CreatePluginClass()
