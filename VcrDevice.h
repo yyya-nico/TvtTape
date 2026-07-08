@@ -38,6 +38,9 @@ public:
     bool Pause();
     bool Rewind();
     bool FastForward();
+    bool SetDevicePower(bool powerOn);
+    bool UpdateDevicePowerState();
+    bool IsDevicePowerOn() const;
     bool UpdateTransportState();
     TransportState GetTransportState() const;
     const wchar_t *GetTransportStateText() const;
@@ -57,6 +60,7 @@ private:
     IBaseFilter *m_pSourceFilter;
     IBaseFilter *m_pGrabberFilter;
     TransportState m_TransportState;
+    bool m_DevicePowerOn;
     int m_PreferredDeviceIndex;
     int m_ActiveDeviceIndex;
     std::wstring m_ActiveDeviceName;

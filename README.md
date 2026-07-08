@@ -1,49 +1,85 @@
-# TvtTape Plugin
-Controls D-VHS equipment and outputs the TS stream to BonDriver_Pipe.dll.
+# TvtTape プラグイン
+D-VHS 機器を制御し、TS ストリームを BonDriver_Pipe.dll へ出力する TVTest プラグインです。
 
-## Architecture (TvtPlay-style split)
+## 構成
 
 - `TvtTape.cpp` / `TvtTape.h`
-  - Main plugin class (`CTvtTape`)
-  - Status-item UI, timer update loop, command dispatch
+  - メインプラグインクラス（`CTvtTape`）
+  - TvtPlay 風ステータス行 UI、タイマー更新、コマンド分岐
 - `VcrDevice.cpp` / `VcrDevice.h`
-  - VCR unit controller class (`CVcrDevice`)
-  - Device enumeration, transport control, timecode read
+  - VCR デバイス制御クラス（`CVcrDevice`）
+  - デバイス列挙、トランスポート制御、タイムコード取得
 - `PipeControl.cpp` / `PipeControl.h`
-  - BonDriver_Pipe control channel adapter (`CPipeControl`)
-  - `PAUSE`, `PURGE`, `GET_READY_STATE`
+  - BonDriver_Pipe 制御チャネルアダプタ（`CPipeControl`）
+  - `PAUSE`、`PURGE`、`GET_READY_STATE`
+- `StatusView.cpp` / `StatusView.h`
+  - ステータス項目レイアウト／入力処理
+- `DrawUtil.cpp` / `DrawUtil.h`
+  - テーマ色単色描画に使う BMP 描画ヘルパ
 
-## Current features
+## 現在の機能
 
-- TVTest plugin output: `TvtTape.tvtp`
-- Transport controls in status item:
-  - Stop
+- TVTest プラグイン出力: `TvtTape.tvtp`
+- ステータス行の操作ボタン:
+  - VCR デバイス選択
+  - 電源 ON/OFF トグル
+  - 巻き戻し（トグル: REW -> PLAY）
+  - 再生／一時停止トグル
+  - 停止
+  - 早送り（トグル: FF -> PLAY）
+  - 録画開始／録画停止トグル
+- ステータス表示:
+  - タイムコード（`HH:MM:SS:FF`）
+- VCR デバイスの手動選択:
+  - ステータス行左端の `VCR:` 領域をクリック
+  - `Auto select` またはデバイス番号を選択
+  - 選択結果は `TvtTape.ini` に保存
+- ボタン BMP の読み込み:
+  - まず埋め込みリソース `IDB_TVTAPE_BUTTONS` を使用
+  - リソースが無効な場合は `TvtTape.ini` の `UI > IconBitmapPath` を使用
+  - どちらも使えない場合はテキスト表示へフォールバック
+- BonDriver_Pipe 連携:
+  - Pause/Resume 同期
+  - 停止時 Purge
+- TS 入力断による自動録画停止:
+  - 録画中の bitrate 0Mbps を監視
+  - 5 秒以上 0 が続くと自動で録画停止
+
+## TODO
+- [ ] 実際の TVTest テーマでアイコンの見た目・余白を微調整
+
+## 流用・参考元
+
+- TVTest https://github.com/DBCTRADO/TVTest から `TVTestPlugin.h`を使用し、`StatusView.*`、`DrawUtil.*` を参考にしています。
+
+## BMP 要件
+
+- 形式: 非圧縮 BMP
+- カラーモデル: 1bit モノクロ、または単色化しやすい 32bit BMP
+- レイアウト: 横一列 9 アイコン（順序固定）
+  - Power Off
+  - Power On
+  - Rewind
   - Play
   - Pause
-  - Rewind (toggle: Rewind -> Play)
-  - FastForward (toggle: FastForward -> Play)
-  - Record to PC (toggle: Start Record -> Stop Record)
-- Status display:
-  - Current transport state
-  - TimeCode (`HH:MM:SS:FF`)
-- Manual VCR device selection:
-  - Click `TvtTape Device` status item
-  - `Auto select` or explicit device index
-  - Selection persisted in `TvtTape.ini`
-- BonDriver_Pipe integration:
-  - Pause/Resume synchronization
-  - Purge on stop
-- Auto-stop on TS input loss:
-  - Detects loss of TS input during recording (bitrate 0Mbps)
-  - Automatically stops recording if no input for 5+ seconds
+  - Stop
+  - FastForward
+  - Record
+  - Record Stop
+- サイズ: 正方形アイコン（推奨 16x16 または 20x20）
+- 画像サイズ例:
+  - 16x16 の場合: 144x16 BMP
+  - 20x20 の場合: 180x20 BMP
+- 背景: アイコン色と区別できる単色背景
+  - 描画時に TVTest の文字色へ再着色されます
+- 参照先:
+  - 既定は埋め込みリソース `IDB_TVTAPE_BUTTONS`
+  - 外部ファイル運用する場合は `TvtTape.ini` の `UI > IconBitmapPath`
 
-## Todo
-- [ ] Improving UI usability
-
-## Build
+## ビルド
 
 ```powershell
 msbuild .\TvtTape.vcxproj /p:Configuration=Release /p:Platform=x64
 ```
 
-If `msbuild` is not in PATH, run from Visual Studio Developer Command Prompt.
+`msbuild` が PATH にない場合は Visual Studio Developer Command Prompt から実行してください。

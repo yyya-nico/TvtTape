@@ -94,15 +94,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DrawUtil.h" />
     <ClInclude Include="PipeControl.h" />
+    <ClInclude Include="StatusView.h" />
     <ClInclude Include="TvtTape.h" />
     <ClInclude Include="VcrDevice.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DrawUtil.cpp" />
     <ClCompile Include="PipeControl.cpp" />
+    <ClCompile Include="StatusView.cpp" />
     <ClCompile Include="TvtTape.cpp" />
     <ClCompile Include="VcrDevice.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TvtTape.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

@@ -1,0 +1,3 @@
+#include "resource.h"
+
+IDB_TVTAPE_BUTTONS BITMAP "TvtTapeButtons.bmp"

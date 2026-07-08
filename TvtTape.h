@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 
+#include "DrawUtil.h"
+#include "StatusView.h"
+
 #define TVTEST_PLUGIN_VERSION TVTEST_PLUGIN_VERSION_(0,0,14)
 #include "TVTestPlugin.h"
 
@@ -24,11 +27,18 @@ public:
     bool OnStatusItemMouseEvent(TVTest::StatusItemMouseEventInfo *pInfo) override;
     bool OnStatusItemNotify(TVTest::StatusItemEventInfo *pInfo) override;
 
+    bool ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd);
+    void ExecuteTransportAction(int action);
+    const std::wstring &GetDeviceText() const { return m_DeviceText; }
+    const std::wstring &GetTimeCodeText() const { return m_TimeCodeText; }
+    bool IsPowered() const { return m_VcrDevice.IsDevicePowerOn(); }
+    bool IsPlaying() const { return m_VcrDevice.GetTransportState() == CVcrDevice::TransportState::Play; }
+    bool IsRecording() const;
+    bool DrawTransportIcon(HDC hdc, const RECT &rect, int iconIndex) const;
+
 private:
     enum {
-        STATUS_ITEM_STATE = 1,
-        STATUS_ITEM_TIMECODE,
-        STATUS_ITEM_BUTTONS,
+        STATUS_ITEM_TRANSPORT_ROW = 1,
     };
 
     enum {
@@ -42,6 +52,10 @@ private:
     void LoadSettings();
     void SaveSettings() const;
     std::wstring GetIniPath() const;
+    std::wstring ResolveUiFilePath(const std::wstring &fileName) const;
+    void InitializeStatusView();
+    void LoadButtonBitmap();
+    void AdjustStatusLayout(int statusWidth);
 
     void RegisterStatusItems();
     void SetStatusItemsVisible(bool visible);
@@ -49,19 +63,25 @@ private:
     void UpdateStatus();
     void MonitorRecordingBitrate();
     bool ReopenDevice();
-    bool ShowDeviceMenu(const TVTest::StatusItemMouseEventInfo *pInfo);
+    int GetButtonWidth() const;
 
     CVcrDevice m_VcrDevice;
     CPipeControl m_PipeControl;
+    CStatusView m_StatusView;
+    DrawUtil::CBitmap m_ButtonIcons;
     UINT_PTR m_TimerID;
     UINT m_PollIntervalMs;
+    int m_ButtonIconSize;
+    bool m_StatusViewInitialized;
 
     int m_SelectedDeviceIndex;
     std::wstring m_IniPath;
     std::vector<std::wstring> m_DeviceNames;
 
     std::wstring m_StateText;
+    std::wstring m_DeviceText;
     std::wstring m_TimeCodeText;
+    std::wstring m_ButtonBitmapPath;
 
     ULONGLONG m_ZeroBitrateStartTick;
     bool m_RecordStopTriggered;

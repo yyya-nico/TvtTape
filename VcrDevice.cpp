@@ -109,6 +109,7 @@ CVcrDevice::CVcrDevice()
     , m_pSourceFilter(nullptr)
     , m_pGrabberFilter(nullptr)
     , m_TransportState(TransportState::Unknown)
+    , m_DevicePowerOn(true)
     , m_PreferredDeviceIndex(-1)
     , m_ActiveDeviceIndex(-1)
 {
@@ -202,6 +203,7 @@ void CVcrDevice::Close()
     Stop();
     DestroyGraph();
     m_TransportState = TransportState::Unknown;
+    m_DevicePowerOn = false;
     m_ActiveDeviceIndex = -1;
     m_ActiveDeviceName.clear();
 }
@@ -234,6 +236,49 @@ bool CVcrDevice::Rewind()
 bool CVcrDevice::FastForward()
 {
     return SetTransportMode(ED_MODE_FF, TransportState::FastForward);
+}
+
+bool CVcrDevice::SetDevicePower(bool powerOn)
+{
+    if (!m_pSourceFilter)
+        return false;
+
+    IAMExtDevice *pDevice = nullptr;
+    if (FAILED(m_pSourceFilter->QueryInterface(IID_IAMExtDevice, reinterpret_cast<void **>(&pDevice))) || !pDevice)
+        return false;
+
+    const long powerMode = powerOn ? ED_POWER_ON : ED_POWER_OFF;
+    const HRESULT hr = pDevice->put_DevicePower(powerMode);
+    pDevice->Release();
+    if (FAILED(hr))
+        return false;
+
+    m_DevicePowerOn = powerOn;
+    return true;
+}
+
+bool CVcrDevice::UpdateDevicePowerState()
+{
+    if (!m_pSourceFilter)
+        return false;
+
+    IAMExtDevice *pDevice = nullptr;
+    if (FAILED(m_pSourceFilter->QueryInterface(IID_IAMExtDevice, reinterpret_cast<void **>(&pDevice))) || !pDevice)
+        return false;
+
+    long powerMode = ED_POWER_ON;
+    const HRESULT hr = pDevice->get_DevicePower(&powerMode);
+    pDevice->Release();
+    if (FAILED(hr))
+        return false;
+
+    m_DevicePowerOn = powerMode != ED_POWER_OFF;
+    return true;
+}
+
+bool CVcrDevice::IsDevicePowerOn() const
+{
+    return m_DevicePowerOn;
 }
 
 bool CVcrDevice::UpdateTransportState()
@@ -405,6 +450,8 @@ bool CVcrDevice::BuildGraph()
 
     m_pMediaControl->Run();
     m_TransportState = TransportState::Stop;
+    m_DevicePowerOn = true;
+    UpdateDevicePowerState();
     return true;
 }
 
