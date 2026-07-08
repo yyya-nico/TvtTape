@@ -389,29 +389,25 @@ void CTvtTape::RegisterStatusItems()
     info.Size = sizeof(info);
     info.Flags = 0;
     info.Style = TVTest::STATUS_ITEM_STYLE_VARIABLEWIDTH;
+    info.MinWidth = 0;
+    info.MaxWidth = -1;
 
     info.ID = STATUS_ITEM_STATE;
     info.pszIDText = L"TvtTape.State";
     info.pszName = L"TvtTape State";
-    info.MinWidth = 30;
-    info.MaxWidth = 200;
-    info.DefaultWidth = 150;
+    info.DefaultWidth = TVTest::StatusItemWidthByFontSize(9);
     m_pApp->RegisterStatusItem(&info);
 
     info.ID = STATUS_ITEM_TIMECODE;
     info.pszIDText = L"TvtTape.TimeCode";
     info.pszName = L"TvtTape TimeCode";
-    info.MinWidth = 30;
-    info.MaxWidth = 100;
-    info.DefaultWidth = 50;
+    info.DefaultWidth = TVTest::StatusItemWidthByFontSize(6);
     m_pApp->RegisterStatusItem(&info);
 
     info.ID = STATUS_ITEM_BUTTONS;
     info.pszIDText = L"TvtTape.Buttons";
     info.pszName = L"TvtTape Control";
-    info.MinWidth = 100;
-    info.MaxWidth = 180;
-    info.DefaultWidth = 150;
+    info.DefaultWidth = TVTest::StatusItemWidthByFontSize(11);
     m_pApp->RegisterStatusItem(&info);
 
     TVTest::StatusItemSetInfo setInfo = {};
