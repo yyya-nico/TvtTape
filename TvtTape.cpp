@@ -15,6 +15,7 @@ constexpr int kBitmapIconCount = 10;
 constexpr int kStateWidth = 96;
 constexpr int kTimeCodeWidth = 80;
 constexpr int kButtonWidthFallback = 20;
+constexpr COLORREF kPowerOnColor = RGB(0xCC, 0x00, 0x00);
 
 enum UiItemId {
     UI_ITEM_DEVICE = 1,
@@ -89,7 +90,7 @@ public:
 
     void Draw(HDC hdc, const RECT *pRect) override
     {
-        if (!m_pOwner->DrawTransportIcon(hdc, *pRect, ICON_VCR)) {
+        if (!m_pOwner->DrawTransportIcon(hdc, *pRect, ICON_VCR, ::GetTextColor(hdc))) {
             RECT rc = *pRect;
             ::DrawTextW(hdc, L"VCR", -1, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
         }
@@ -121,9 +122,12 @@ public:
     void Draw(HDC hdc, const RECT *pRect) override
     {
         int iconIndex = ICON_PLAY;
+        COLORREF iconColor = ::GetTextColor(hdc);
         switch (m_Action) {
         case TRANSPORT_POWER:
             iconIndex = m_pOwner->IsPowered() ? ICON_POWER_ON : ICON_POWER_OFF;
+            if (iconIndex == ICON_POWER_ON)
+                iconColor = kPowerOnColor;
             break;
         case TRANSPORT_REW:
             iconIndex = ICON_REW;
@@ -139,10 +143,11 @@ public:
             break;
         case TRANSPORT_RECORD:
             iconIndex = m_pOwner->IsRecording() ? ICON_RECORD_STOP : ICON_RECORD;
+            iconColor = m_pOwner->GetApp()->GetColor(L"StatusRecordingCircle");
             break;
         }
 
-        if (!m_pOwner->DrawTransportIcon(hdc, *pRect, iconIndex)) {
+        if (!m_pOwner->DrawTransportIcon(hdc, *pRect, iconIndex, iconColor)) {
             RECT rc = *pRect;
             const bool state = m_Action == TRANSPORT_PLAY_PAUSE ? m_pOwner->IsPlaying() :
                 m_Action == TRANSPORT_POWER ? m_pOwner->IsPowered() :
@@ -626,8 +631,6 @@ void CTvtTape::RedrawStatusItems()
 
 void CTvtTape::UpdateStatus()
 {
-    MonitorRecordingBitrate();
-
     if (!m_VcrDevice.IsOpen()) {
         m_DeviceNames.clear();
         if (m_VcrDevice.EnumDevices(&m_DeviceNames) && !m_DeviceNames.empty()) {
@@ -864,7 +867,7 @@ bool CTvtTape::ReopenDevice()
     return true;
 }
 
-bool CTvtTape::DrawTransportIcon(HDC hdc, const RECT &rect, int iconIndex) const
+bool CTvtTape::DrawTransportIcon(HDC hdc, const RECT &rect, int iconIndex, COLORREF color) const
 {
     if (!m_ButtonIcons.IsCreated() || m_ButtonIconSize <= 0 || iconIndex < 0 || iconIndex >= kBitmapIconCount)
         return false;
@@ -878,7 +881,7 @@ bool CTvtTape::DrawTransportIcon(HDC hdc, const RECT &rect, int iconIndex) const
         0,
         m_ButtonIconSize,
         m_ButtonIconSize,
-        ::GetTextColor(hdc));
+        color);
 }
 
 int CTvtTape::GetButtonWidth() const
