@@ -332,19 +332,19 @@ const wchar_t *CVcrDevice::GetTransportStateText() const
 {
     switch (m_TransportState) {
     case TransportState::Stop:
-        return L"STOP";
+        return L"停止";
     case TransportState::Play:
-        return L"PLAY";
+        return L"再生";
     case TransportState::Pause:
-        return L"PAUSE";
+        return L"一時停止";
     case TransportState::Rewind:
-        return L"REW";
+        return L"巻き戻し";
     case TransportState::FastForward:
-        return L"FF";
+        return L"早送り";
     case TransportState::Record:
-        return L"REC";
+        return L"録画";
     default:
-        return L"UNKNOWN";
+        return L"不明";
     }
 }
 
