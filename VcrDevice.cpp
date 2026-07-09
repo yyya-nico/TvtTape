@@ -1,6 +1,7 @@
 ﻿#include "VcrDevice.h"
 
 #include <algorithm>
+#include <xprtdefs.h>
 
 DEFINE_GUID(CLSID_SampleGrabber, 0xC1F400A0, 0x3F08, 0x11d3, 0x9F, 0x0B, 0x00, 0x60, 0x08, 0x03, 0x9E, 0x37);
 DEFINE_GUID(IID_ISampleGrabber, 0x6B652FFF, 0x11FE, 0x4fce, 0x92, 0xAD, 0x02, 0x66, 0xB5, 0xD7, 0xC7, 0x8F);
@@ -27,6 +28,28 @@ interface ISampleGrabber : public IUnknown
 #pragma comment(lib, "strmiids.lib")
 
 namespace {
+
+int DecodeBcdByte(unsigned long value)
+{
+    const int high = static_cast<int>((value >> 4) & 0x0F);
+    const int low = static_cast<int>(value & 0x0F);
+    if (high <= 9 && low <= 9)
+        return high * 10 + low;
+    return static_cast<int>(value & 0xFF);
+}
+
+void DecodeHmsf(unsigned long value, long *pHour, long *pMinute, long *pSecond, long *pFrame)
+{
+    const unsigned long hh = (value >> 24) & 0xFF;
+    const unsigned long mm = (value >> 16) & 0xFF;
+    const unsigned long ss = (value >> 8) & 0xFF;
+    const unsigned long ff = value & 0xFF;
+
+    *pHour = DecodeBcdByte(hh);
+    *pMinute = DecodeBcdByte(mm);
+    *pSecond = DecodeBcdByte(ss);
+    *pFrame = DecodeBcdByte(ff);
+}
 
 std::wstring GetFriendlyName(IMoniker *pMoniker)
 {
@@ -354,20 +377,48 @@ bool CVcrDevice::GetTimeCode(long *pHour, long *pMinute, long *pSecond, long *pF
         return false;
 
     IAMTimecodeReader *pReader = nullptr;
-    if (FAILED(m_pSourceFilter->QueryInterface(IID_IAMTimecodeReader, reinterpret_cast<void **>(&pReader))) || !pReader)
+    if (SUCCEEDED(m_pSourceFilter->QueryInterface(IID_IAMTimecodeReader, reinterpret_cast<void **>(&pReader))) && pReader) {
+        const long readModes[] = {
+            ED_DEVCAP_RTC_READ,
+            ED_DEVCAP_TIMECODE_READ,
+            ED_DEVCAP_CTLTRK_READ,
+        };
+
+        for (const long mode : readModes) {
+            TIMECODE_SAMPLE sample = {};
+            sample.dwFlags = mode;
+            sample.timecode.dwFrames = 0;
+
+            if (SUCCEEDED(pReader->GetTimecode(&sample))) {
+                DecodeHmsf(static_cast<unsigned long>(sample.timecode.dwFrames), pHour, pMinute, pSecond, pFrame);
+                pReader->Release();
+                return true;
+            }
+        }
+
+        pReader->Release();
+    }
+
+    IAMExtTransport *pTransport = nullptr;
+    if (FAILED(m_pSourceFilter->QueryInterface(IID_IAMExtTransport, reinterpret_cast<void **>(&pTransport))) || !pTransport)
         return false;
 
-    TIMECODE_SAMPLE sample = {};
-    const HRESULT hr = pReader->GetTimecode(&sample);
-    pReader->Release();
+    pTransport->SetTransportBasicParameters(
+        ED_TRANSBASIC_TIME_FORMAT,
+        ED_FORMAT_HMSF,
+        nullptr);
+    pTransport->SetTransportBasicParameters(
+        ED_TRANSBASIC_TIME_REFERENCE,
+        ED_TIMEREF_TIMECODE,
+        nullptr);
+
+    long timeValue = 0;
+    const HRESULT hr = pTransport->GetStatus(ED_MEDIA_LENGTH, &timeValue);
+    pTransport->Release();
     if (FAILED(hr))
         return false;
 
-    const long frames = sample.timecode.dwFrames;
-    *pHour = frames / (30 * 60 * 60);
-    *pMinute = (frames / (30 * 60)) % 60;
-    *pSecond = (frames / 30) % 60;
-    *pFrame = frames % 30;
+    DecodeHmsf(static_cast<unsigned long>(timeValue), pHour, pMinute, pSecond, pFrame);
     return true;
 }
 
