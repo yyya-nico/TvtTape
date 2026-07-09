@@ -109,7 +109,7 @@ CVcrDevice::CVcrDevice()
     , m_pSourceFilter(nullptr)
     , m_pGrabberFilter(nullptr)
     , m_TransportState(TransportState::Unknown)
-    , m_DevicePowerOn(true)
+    , m_DevicePowerOn(false)
     , m_PreferredDeviceIndex(-1)
     , m_ActiveDeviceIndex(-1)
 {
