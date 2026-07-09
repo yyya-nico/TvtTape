@@ -11,7 +11,7 @@ namespace {
 constexpr wchar_t kPluginName[] = L"TvtTape";
 constexpr wchar_t kPluginDescription[] = L"VCR 制御プラグイン BonDriver_Pipe 対応";
 constexpr wchar_t kDefaultIconBitmap[] = L"TvtTapeButtons.bmp";
-constexpr int kBitmapIconCount = 10;
+constexpr int kBitmapIconCount = 8;
 constexpr int kStateWidth = 96;
 constexpr int kTimeCodeWidth = 80;
 constexpr int kButtonWidthFallback = 20;
@@ -40,15 +40,13 @@ enum TransportAction {
 
 enum TransportIconIndex {
     ICON_VCR = 0,
-    ICON_POWER_OFF,
-    ICON_POWER_ON,
+    ICON_POWER,
     ICON_REW,
     ICON_PLAY,
     ICON_PAUSE,
     ICON_STOP,
     ICON_FF,
     ICON_RECORD,
-    ICON_RECORD_STOP,
 };
 
 CTvtTape *g_TimerOwner = nullptr;
@@ -125,8 +123,8 @@ public:
         COLORREF iconColor = ::GetTextColor(hdc);
         switch (m_Action) {
         case TRANSPORT_POWER:
-            iconIndex = m_pOwner->IsPowered() ? ICON_POWER_ON : ICON_POWER_OFF;
-            if (iconIndex == ICON_POWER_ON)
+            iconIndex = ICON_POWER;
+            if (m_pOwner->IsPowered())
                 iconColor = kPowerOnColor;
             break;
         case TRANSPORT_REW:
@@ -142,7 +140,7 @@ public:
             iconIndex = ICON_FF;
             break;
         case TRANSPORT_RECORD:
-            iconIndex = m_pOwner->IsRecording() ? ICON_RECORD_STOP : ICON_RECORD;
+            iconIndex = m_pOwner->IsRecording() ? ICON_STOP : ICON_RECORD;
             iconColor = m_pOwner->GetApp()->GetColor(L"StatusRecordingCircle");
             break;
         }
