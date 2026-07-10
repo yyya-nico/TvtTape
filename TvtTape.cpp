@@ -786,8 +786,10 @@ void CTvtTape::ExecuteTransportAction(int action)
     case TRANSPORT_REW:
         if (m_VcrDevice.GetTransportState() == CVcrDevice::TransportState::Rewind)
             m_VcrDevice.Play();
-        else
+        else if (m_VcrDevice.GetTransportState() == CVcrDevice::TransportState::Stop)
             m_VcrDevice.Rewind();
+        else
+            m_VcrDevice.PlayFastestReverse();
         break;
 
     case TRANSPORT_PLAY_PAUSE:
@@ -808,8 +810,10 @@ void CTvtTape::ExecuteTransportAction(int action)
     case TRANSPORT_FF:
         if (m_VcrDevice.GetTransportState() == CVcrDevice::TransportState::FastForward)
             m_VcrDevice.Play();
-        else
+        else if (m_VcrDevice.GetTransportState() == CVcrDevice::TransportState::Stop)
             m_VcrDevice.FastForward();
+        else
+            m_VcrDevice.PlayFastestForward();
         break;
 
     case TRANSPORT_RECORD:

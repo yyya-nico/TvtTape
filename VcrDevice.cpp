@@ -261,6 +261,16 @@ bool CVcrDevice::FastForward()
     return SetTransportMode(ED_MODE_FF, TransportState::FastForward);
 }
 
+bool CVcrDevice::PlayFastestForward()
+{
+    return SetTransportMode(ED_MODE_PLAY_FASTEST_FWD, TransportState::PlayFastestForward);
+}
+
+bool CVcrDevice::PlayFastestReverse()
+{
+    return SetTransportMode(ED_MODE_PLAY_FASTEST_REV, TransportState::PlayFastestReverse);
+}
+
 bool CVcrDevice::SetDevicePower(bool powerOn)
 {
     if (!m_pSourceFilter)
@@ -335,6 +345,12 @@ bool CVcrDevice::UpdateTransportState()
     case ED_MODE_FF:
         m_TransportState = TransportState::FastForward;
         break;
+    case ED_MODE_PLAY_FASTEST_REV:
+        m_TransportState = TransportState::PlayFastestReverse;
+        break;
+    case ED_MODE_PLAY_FASTEST_FWD:
+        m_TransportState = TransportState::PlayFastestForward;
+        break;
     case ED_MODE_RECORD:
         m_TransportState = TransportState::Record;
         break;
@@ -364,6 +380,10 @@ const wchar_t *CVcrDevice::GetTransportStateText() const
         return L"巻き戻し";
     case TransportState::FastForward:
         return L"早送り";
+    case TransportState::PlayFastestReverse:
+        return L"巻き戻し再生";
+    case TransportState::PlayFastestForward:
+        return L"早送り再生";
     case TransportState::Record:
         return L"録画";
     default:

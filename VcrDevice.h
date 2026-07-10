@@ -15,6 +15,8 @@ public:
         Pause,
         Rewind,
         FastForward,
+        PlayFastestReverse,
+        PlayFastestForward,
         Record,
         Unknown,
     };
@@ -38,6 +40,8 @@ public:
     bool Pause();
     bool Rewind();
     bool FastForward();
+    bool PlayFastestForward();
+    bool PlayFastestReverse();
     bool SetDevicePower(bool powerOn);
     bool UpdateDevicePowerState();
     bool IsDevicePowerOn() const;
