@@ -48,7 +48,7 @@ void DecodeHmsf(unsigned long value, long *pHour, long *pMinute, long *pSecond, 
     *pHour = DecodeBcdByte(hh);
     *pMinute = DecodeBcdByte(mm);
     *pSecond = DecodeBcdByte(ss);
-    *pFrame = DecodeBcdByte(ff);
+    *pFrame = ff;
 }
 
 std::wstring GetFriendlyName(IMoniker *pMoniker)
