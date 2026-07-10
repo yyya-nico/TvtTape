@@ -650,7 +650,8 @@ void CTvtTape::UpdateStatus()
     long hour = 0;
     long minute = 0;
     long second = 0;
-    if (m_VcrDevice.GetTimeCode(&hour, &minute, &second, nullptr)) {
+    long frame = 0;
+    if (m_VcrDevice.GetTimeCode(&hour, &minute, &second, &frame)) {
         wchar_t timeCode[32] = {};
         swprintf_s(timeCode, L"%02ld:%02ld:%02ld", hour, minute, second);
         m_TimeCodeText = timeCode;
