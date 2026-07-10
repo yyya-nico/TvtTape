@@ -46,6 +46,9 @@ D-VHS 機器を制御し、TS ストリームを BonDriver_Pipe.dll へ出力す
   - 録画中の bitrate 0Mbps を監視
   - 5 秒以上 0 が続くと自動で録画停止
 
+## TODO
+- [ ] 早送り再生・巻き戻し再生時にコマ送り画像を表示する？
+
 ## 流用・参考元
 
 - TVTest https://github.com/DBCTRADO/TVTest から `TVTestPlugin.h`を使用し、`StatusView.*`、`DrawUtil.*` を参考にしています。
