@@ -213,7 +213,7 @@ CTvtTape::CTvtTape()
     , m_StatusViewInitialized(false)
     , m_SelectedDeviceIndex(-1)
     , m_StateText(L"初期化中...")
-    , m_TimeCodeText(L"--:--:--:--")
+    , m_TimeCodeText(L"--:--:--")
     , m_ZeroBitrateStartTick(0)
     , m_RecordStopTriggered(false)
 {
@@ -269,7 +269,7 @@ bool CTvtTape::Initialize()
             m_pApp->AddLog(L"TvtTape: ステータス監視タイマーの開始に失敗しました", TVTest::LOG_TYPE_WARNING);
     } else {
         m_StateText = L"無効";
-        m_TimeCodeText = L"--:--:--:--";
+        m_TimeCodeText = L"--:--:--";
     }
 
     UpdateStatus();
@@ -316,7 +316,7 @@ bool CTvtTape::OnPluginEnable(bool fEnable)
             g_TimerOwner = nullptr;
         m_VcrDevice.Close();
         m_StateText = L"無効";
-        m_TimeCodeText = L"--:--:--:--";
+        m_TimeCodeText = L"--:--:--";
     }
 
     UpdateStatus();
@@ -639,7 +639,7 @@ void CTvtTape::UpdateStatus()
             m_StateText = L"接続されていません";
         }
 
-        m_TimeCodeText = L"--:--:--:--";
+        m_TimeCodeText = L"--:--:--";
         RedrawStatusItems();
         return;
     }
@@ -650,13 +650,12 @@ void CTvtTape::UpdateStatus()
     long hour = 0;
     long minute = 0;
     long second = 0;
-    long frame = 0;
-    if (m_VcrDevice.GetTimeCode(&hour, &minute, &second, &frame)) {
+    if (m_VcrDevice.GetTimeCode(&hour, &minute, &second, nullptr)) {
         wchar_t timeCode[32] = {};
-        swprintf_s(timeCode, L"%02ld:%02ld:%02ld:%02ld", hour, minute, second, frame);
+        swprintf_s(timeCode, L"%02ld:%02ld:%02ld", hour, minute, second);
         m_TimeCodeText = timeCode;
     } else {
-        m_TimeCodeText = L"--:--:--:--";
+        m_TimeCodeText = L"--:--:--";
     }
 
     RedrawStatusItems();
