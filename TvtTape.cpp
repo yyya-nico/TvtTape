@@ -431,8 +431,11 @@ LRESULT CALLBACK CTvtTape::EventCallback(UINT Event, LPARAM lParam1, LPARAM lPar
 void CALLBACK CTvtTape::TimerProc(HWND, UINT, UINT_PTR idEvent, DWORD)
 {
     auto *pThis = g_TimerOwner;
-    if (pThis && pThis->m_TimerID == idEvent)
+    if (pThis && pThis->m_TimerID == idEvent) {
         pThis->MonitorRecordingBitrate();
+        if (pThis->m_VcrDevice.IsOpen())
+            pThis->UpdateStatus();
+    }
 }
 
 void CTvtTape::LoadSettings()
