@@ -33,7 +33,7 @@ D-VHS 機器を制御し、TS ストリームを BonDriver_Pipe.dll へ出力す
   - タイムコード（`HH:MM:SS`）
 - VCR デバイスの手動選択:
   - ステータス行左端のビデオアイコンをクリック
-  - `Auto select` またはデバイス番号を選択
+  - `自動選択` またはデバイス番号を選択
   - 選択結果は `TvtTape.ini` に保存
 - ボタン BMP の読み込み:
   - まず埋め込みリソース `IDB_TVTAPE_BUTTONS` を使用
