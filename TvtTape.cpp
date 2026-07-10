@@ -15,7 +15,7 @@ constexpr int kBitmapIconCount = 8;
 constexpr int kStateWidth = 96;
 constexpr int kTimeCodeWidth = 80;
 constexpr int kButtonWidthFallback = 20;
-constexpr COLORREF kPowerOnColor = RGB(0x00, 0xCC, 0x00);
+constexpr COLORREF kPowerOnColor = RGB(0x00, 0xAA, 0x00);
 
 enum UiItemId {
     UI_ITEM_DEVICE = 1,
