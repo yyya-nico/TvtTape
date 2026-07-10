@@ -14,6 +14,7 @@
 *.opensdf
 *.sdf
 *.ipch
+*.code-workspace
 
 # User-specific project settings
 *.user
