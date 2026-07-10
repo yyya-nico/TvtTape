@@ -13,7 +13,7 @@ constexpr wchar_t kPluginDescription[] = L"VCR 制御プラグイン BonDriver_P
 constexpr wchar_t kDefaultIconBitmap[] = L"TvtTapeButtons.bmp";
 constexpr int kBitmapIconCount = 8;
 constexpr int kStateWidth = 96;
-constexpr int kTimeCodeWidth = 80;
+constexpr int kTimeCodeWidth = 60;
 constexpr int kButtonWidthFallback = 20;
 constexpr COLORREF kPowerOnColor = RGB(0x00, 0xAA, 0x00);
 
@@ -171,7 +171,7 @@ public:
         : CStatusItem(pStatus, UI_ITEM_TIMECODE, width)
         , m_pOwner(pOwner)
     {
-        m_MinWidth = 80;
+        m_MinWidth = 40;
     }
 
     void Draw(HDC hdc, const RECT *pRect) override
@@ -329,7 +329,7 @@ bool CTvtTape::OnStatusItemDraw(TVTest::StatusItemDrawInfo *pInfo)
         return false;
 
     if (pInfo->Flags & TVTest::STATUS_ITEM_DRAW_FLAG_PREVIEW) {
-        m_pApp->ThemeDrawText(pInfo->pszStyle, pInfo->hdc, L"TvtTape ステータスバー", pInfo->DrawRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE, pInfo->Color);
+        m_pApp->ThemeDrawText(pInfo->pszStyle, pInfo->hdc, L"TvtTapeステータスバー", pInfo->DrawRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE, pInfo->Color);
         return true;
     }
 
@@ -597,7 +597,7 @@ void CTvtTape::RegisterStatusItems()
     info.Style = TVTest::STATUS_ITEM_STYLE_FORCEFULLROW;
     info.ID = STATUS_ITEM_TRANSPORT_ROW;
     info.pszIDText = L"TvtTape.TransportRow";
-    info.pszName = L"TvtTape ステータスバー";
+    info.pszName = L"TvtTapeステータスバー";
     info.MinWidth = 0;
     info.MaxWidth = -1;
     info.DefaultWidth = TVTest::StatusItemWidthByFontSize(18);
@@ -890,7 +890,7 @@ bool CTvtTape::DrawTransportIcon(HDC hdc, const RECT &rect, int iconIndex, COLOR
 
     return DrawUtil::DrawMonoColorDIB(
         hdc,
-        rect.left,
+        rect.left + 2,
         rect.top + ((rect.bottom - rect.top) - m_ButtonIconSize) / 2,
         m_ButtonIcons.GetHandle(),
         iconIndex * m_ButtonIconSize,
