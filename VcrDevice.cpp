@@ -38,7 +38,7 @@ int DecodeBcdByte(unsigned long value)
     return static_cast<int>(value & 0xFF);
 }
 
-void DecodeHmsf(unsigned long value, long *pHour, long *pMinute, long *pSecond, long *pFrame)
+void DecodeHmsf(unsigned long value, long *pHour, long *pMinute, long *pSecond, long *pFrame, bool *isNegative)
 {
     const unsigned long hh = (value >> 24) & 0xFF;
     const unsigned long mm = (value >> 16) & 0xFF;
@@ -48,7 +48,8 @@ void DecodeHmsf(unsigned long value, long *pHour, long *pMinute, long *pSecond, 
     *pHour = DecodeBcdByte(hh);
     *pMinute = DecodeBcdByte(mm);
     *pSecond = DecodeBcdByte(ss);
-    *pFrame = ff;
+    *pFrame = DecodeBcdByte(ff & 0x7F);
+    *isNegative = (ff & 0x80) != 0;
 }
 
 std::wstring GetFriendlyName(IMoniker *pMoniker)
@@ -391,9 +392,9 @@ const wchar_t *CVcrDevice::GetTransportStateText() const
     }
 }
 
-bool CVcrDevice::GetTimeCode(long *pHour, long *pMinute, long *pSecond, long *pFrame)
+bool CVcrDevice::GetTimeCode(long *pHour, long *pMinute, long *pSecond, long *pFrame, bool *isNegative)
 {
-    if (!m_pSourceFilter || !pHour || !pMinute || !pSecond || !pFrame)
+    if (!m_pSourceFilter || !pHour || !pMinute || !pSecond || !pFrame || !isNegative)
         return false;
 
     IAMTimecodeReader *pReader = nullptr;
@@ -410,7 +411,7 @@ bool CVcrDevice::GetTimeCode(long *pHour, long *pMinute, long *pSecond, long *pF
             sample.timecode.dwFrames = 0;
 
             if (SUCCEEDED(pReader->GetTimecode(&sample))) {
-                DecodeHmsf(static_cast<unsigned long>(sample.timecode.dwFrames), pHour, pMinute, pSecond, pFrame);
+                DecodeHmsf(static_cast<unsigned long>(sample.timecode.dwFrames), pHour, pMinute, pSecond, pFrame, isNegative);
                 pReader->Release();
                 return true;
             }
@@ -438,7 +439,7 @@ bool CVcrDevice::GetTimeCode(long *pHour, long *pMinute, long *pSecond, long *pF
     if (FAILED(hr))
         return false;
 
-    DecodeHmsf(static_cast<unsigned long>(timeValue), pHour, pMinute, pSecond, pFrame);
+    DecodeHmsf(static_cast<unsigned long>(timeValue), pHour, pMinute, pSecond, pFrame, isNegative);
     return true;
 }
 

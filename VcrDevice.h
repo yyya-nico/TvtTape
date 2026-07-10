@@ -49,7 +49,7 @@ public:
     TransportState GetTransportState() const;
     const wchar_t *GetTransportStateText() const;
 
-    bool GetTimeCode(long *pHour, long *pMinute, long *pSecond, long *pFrame);
+    bool GetTimeCode(long *pHour, long *pMinute, long *pSecond, long *pFrame, bool *isNegative);
     void HandleTsBuffer(const BYTE *pBuffer, long bufferLen);
 
 private:

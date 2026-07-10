@@ -651,9 +651,10 @@ void CTvtTape::UpdateStatus()
     long minute = 0;
     long second = 0;
     long frame = 0;
-    if (m_VcrDevice.GetTimeCode(&hour, &minute, &second, &frame)) {
+    bool isNegative = false;
+    if (m_VcrDevice.GetTimeCode(&hour, &minute, &second, &frame, &isNegative)) {
         wchar_t timeCode[32] = {};
-        if (frame == 0x80)
+        if (isNegative)
             swprintf_s(timeCode, L"-%02ld:%02ld:%02ld", hour, minute, second);
         else
             swprintf_s(timeCode, L"%02ld:%02ld:%02ld", hour, minute, second);
