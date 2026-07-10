@@ -723,7 +723,7 @@ bool CTvtTape::ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd)
     if (!hMenu)
         return false;
 
-    ::AppendMenuW(hMenu, MF_STRING | (m_SelectedDeviceIndex < 0 ? MF_CHECKED : 0), MENU_DEVICE_AUTO, L"Auto select");
+    ::AppendMenuW(hMenu, MF_STRING | (m_SelectedDeviceIndex < 0 ? MF_CHECKED : 0), MENU_DEVICE_AUTO, L"自動選択");
     ::AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
 
     for (size_t i = 0; i < m_DeviceNames.size(); ++i) {
