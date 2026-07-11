@@ -50,7 +50,7 @@ D-VHS 機器を制御し、TS ストリームを BonDriver_Pipe.dll へ出力す
 ## TODO
 - [ ] 早送り再生・巻き戻し再生時にコマ送り画像を表示する？
 
-## 流用・参考元
+## SDK・参考元
 
 - TVTest https://github.com/DBCTRADO/TVTest から `TVTestPlugin.h`を使用し、`StatusView.*`、`DrawUtil.*` を参考にしています。
 
@@ -83,3 +83,10 @@ msbuild .\TvtTape.vcxproj /p:Configuration=Release /p:Platform=x64
 ```
 
 `msbuild` が PATH にない場合は Visual Studio Developer Command Prompt から実行してください。
+
+## トラブルシューティング
+
+### アプリが落ちて、再度TVTestを開いても映像が見られない
+- デバイスが不安定になり、アプリが落ちることがあります。
+- デバイスがリンクしたままになり、他のアプリからアクセスできなくなることがあります。
+- ケーブルを抜いて差し直すか、デバイスマネージャーでIEEE1394のホストコントローラーを一旦無効化して再び有効化してください。
