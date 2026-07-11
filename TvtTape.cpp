@@ -723,14 +723,20 @@ bool CTvtTape::ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd)
     if (!hMenu)
         return false;
 
-    ::AppendMenuW(hMenu, MF_STRING, MENU_DEVICE_REOPEN, L"デバイスを開き直す");
+    const bool hasDevices = !m_DeviceNames.empty();
+
+    ::AppendMenuW(hMenu, MF_STRING | (hasDevices ? 0 : MF_GRAYED), MENU_DEVICE_REOPEN, L"デバイスを開き直す");
     ::AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
 
-    for (size_t i = 0; i < m_DeviceNames.size(); ++i) {
-        UINT menuFlags = MF_STRING;
-        if (m_SelectedDeviceIndex == static_cast<int>(i) || (m_SelectedDeviceIndex < 0 && i == 0))
-            menuFlags |= MF_CHECKED;
-        ::AppendMenuW(hMenu, menuFlags, MENU_DEVICE_FIRST + static_cast<UINT>(i), m_DeviceNames[i].c_str());
+    if (!hasDevices) {
+        ::AppendMenuW(hMenu, MF_STRING | MF_GRAYED, 0, L"デバイスが見つかりません");
+    } else {
+        for (size_t i = 0; i < m_DeviceNames.size(); ++i) {
+            UINT menuFlags = MF_STRING;
+            if (m_SelectedDeviceIndex == static_cast<int>(i) || (m_SelectedDeviceIndex < 0 && i == 0))
+                menuFlags |= MF_CHECKED;
+            ::AppendMenuW(hMenu, menuFlags, MENU_DEVICE_FIRST + static_cast<UINT>(i), m_DeviceNames[i].c_str());
+        }
     }
 
     const UINT command = ::TrackPopupMenu(hMenu, TPM_NONOTIFY | TPM_RETURNCMD | flags, pt.x, pt.y, 0, hwnd, nullptr);
