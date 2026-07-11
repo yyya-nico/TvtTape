@@ -1,9 +1,9 @@
 # Build outputs
-/bin/
-/obj/
-/x64/
-/Debug/
-/Release/
+/**/bin/
+/**/obj/
+/**/x64/
+/**/Debug/
+/**/Release/
 
 # Visual Studio workspace/cache
 /.vs/
