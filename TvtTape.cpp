@@ -49,7 +49,57 @@ enum TransportIconIndex {
     ICON_RECORD,
 };
 
+enum CommandId {
+    COMMAND_DEVICE_REOPEN = 1,
+    COMMAND_POWER,
+    COMMAND_REW,
+    COMMAND_PLAY_PAUSE,
+    COMMAND_STOP,
+    COMMAND_FF,
+    COMMAND_RECORD,
+};
+
+constexpr TVTest::CommandInfo kCommandList[] = {
+    { COMMAND_DEVICE_REOPEN, L"TvtTapeReopenDevice", L"TvtTape: デバイスを開き直す" },
+    { COMMAND_POWER, L"TvtTapePower", L"TvtTape: 電源オン/オフ" },
+    { COMMAND_REW, L"TvtTapeRewind", L"TvtTape: 巻き戻し" },
+    { COMMAND_PLAY_PAUSE, L"TvtTapePlayPause", L"TvtTape: 再生/一時停止" },
+    { COMMAND_STOP, L"TvtTapeStop", L"TvtTape: 停止" },
+    { COMMAND_FF, L"TvtTapeFastForward", L"TvtTape: 早送り" },
+    { COMMAND_RECORD, L"TvtTapeRecord", L"TvtTape: 録画開始/停止" },
+};
+
 CTvtTape *g_TimerOwner = nullptr;
+
+const wchar_t *GetCommandTextById(int commandId)
+{
+    for (const auto &command : kCommandList) {
+        if (command.ID == commandId)
+            return command.pszText;
+    }
+
+    return nullptr;
+}
+
+int GetCommandIdForTransportAction(int action)
+{
+    switch (action) {
+    case TRANSPORT_POWER:
+        return COMMAND_POWER;
+    case TRANSPORT_REW:
+        return COMMAND_REW;
+    case TRANSPORT_PLAY_PAUSE:
+        return COMMAND_PLAY_PAUSE;
+    case TRANSPORT_STOP:
+        return COMMAND_STOP;
+    case TRANSPORT_FF:
+        return COMMAND_FF;
+    case TRANSPORT_RECORD:
+        return COMMAND_RECORD;
+    default:
+        return 0;
+    }
+}
 
 bool IsAbsolutePath(const std::wstring &path)
 {
@@ -156,7 +206,7 @@ public:
 
     void OnLButtonDown(int, int) override
     {
-        m_pOwner->ExecuteTransportAction(m_Action);
+        m_pOwner->ExecuteCommandById(GetCommandIdForTransportAction(m_Action));
     }
 
 private:
@@ -240,6 +290,8 @@ bool CTvtTape::Initialize()
 {
     if (!m_pApp->SetEventCallback(EventCallback, this))
         return false;
+
+    RegisterCommands();
 
     m_VcrDevice.SetTsDataCallback([this](const BYTE *pData, size_t size) {
         if (!m_PipeControl.SendTsData(pData, size)) {
@@ -589,6 +641,49 @@ void CTvtTape::AdjustStatusLayout()
     pTimeCode->SetWidth(kTimeCodeWidth);
 }
 
+void CTvtTape::RegisterCommands()
+{
+    m_pApp->RegisterCommand(kCommandList, _countof(kCommandList));
+}
+
+bool CTvtTape::OnCommand(int commandId)
+{
+    switch (commandId) {
+    case COMMAND_DEVICE_REOPEN:
+        if (!ReopenDevice()) {
+            m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
+        }
+        return true;
+
+    case COMMAND_POWER:
+        ExecuteTransportAction(TRANSPORT_POWER);
+        return true;
+
+    case COMMAND_REW:
+        ExecuteTransportAction(TRANSPORT_REW);
+        return true;
+
+    case COMMAND_PLAY_PAUSE:
+        ExecuteTransportAction(TRANSPORT_PLAY_PAUSE);
+        return true;
+
+    case COMMAND_STOP:
+        ExecuteTransportAction(TRANSPORT_STOP);
+        return true;
+
+    case COMMAND_FF:
+        ExecuteTransportAction(TRANSPORT_FF);
+        return true;
+
+    case COMMAND_RECORD:
+        ExecuteTransportAction(TRANSPORT_RECORD);
+        return true;
+
+    default:
+        return false;
+    }
+}
+
 void CTvtTape::RegisterStatusItems()
 {
     TVTest::StatusItemInfo info = {};
@@ -743,13 +838,7 @@ bool CTvtTape::ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd)
     ::DestroyMenu(hMenu);
 
     if (command == MENU_DEVICE_REOPEN) {
-        if (!ReopenDevice()) {
-            m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
-            return false;
-        }
-
-        UpdateStatus();
-        return true;
+        return ExecuteCommandById(COMMAND_DEVICE_REOPEN);
     }
 
     int selected = m_SelectedDeviceIndex;
@@ -769,6 +858,18 @@ bool CTvtTape::ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd)
 
     UpdateStatus();
     return true;
+}
+
+bool CTvtTape::ExecuteCommandById(int commandId)
+{
+    if (commandId == 0)
+        return false;
+
+    const wchar_t *commandText = GetCommandTextById(commandId);
+    if (commandText && m_pApp->DoCommand(commandText))
+        return true;
+
+    return OnCommand(commandId);
 }
 
 void CTvtTape::ExecuteTransportAction(int action)

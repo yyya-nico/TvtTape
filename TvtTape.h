@@ -23,12 +23,15 @@ public:
     bool Initialize() override;
     bool Finalize() override;
     bool OnPluginEnable(bool fEnable) override;
+    bool OnCommand(int commandId) override;
     bool OnStatusItemDraw(TVTest::StatusItemDrawInfo *pInfo) override;
     bool OnStatusItemMouseEvent(TVTest::StatusItemMouseEventInfo *pInfo) override;
     bool OnStatusItemNotify(TVTest::StatusItemEventInfo *pInfo) override;
 
     bool ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd);
     void ExecuteTransportAction(int action);
+    bool ExecuteCommandById(int commandId);
+
     TVTest::CTVTestApp *GetApp() const { return m_pApp; }
     const std::wstring &GetStateText() const { return m_StateText; }
     const std::wstring &GetDeviceText() const { return m_DeviceText; }
@@ -58,6 +61,7 @@ private:
     void InitializeStatusView();
     void LoadButtonBitmap();
     void AdjustStatusLayout();
+    void RegisterCommands();
 
     void RegisterStatusItems();
     void SetStatusItemsVisible(bool visible);
