@@ -729,7 +729,7 @@ bool CTvtTape::ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd)
     ::AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
 
     if (!hasDevices) {
-        ::AppendMenuW(hMenu, MF_STRING | MF_GRAYED, 0, L"デバイスが見つかりません");
+        ::AppendMenuW(hMenu, MF_STRING | MF_GRAYED, 0, L"<<デバイスが見つかりません>>");
     } else {
         for (size_t i = 0; i < m_DeviceNames.size(); ++i) {
             UINT menuFlags = MF_STRING;
