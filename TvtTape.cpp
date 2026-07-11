@@ -60,13 +60,13 @@ enum CommandId {
 };
 
 constexpr TVTest::CommandInfo kCommandList[] = {
-    { COMMAND_DEVICE_REOPEN, L"TvtTapeReopenDevice", L"TvtTape: デバイスを開き直す" },
-    { COMMAND_POWER, L"TvtTapePower", L"TvtTape: 電源オン/オフ" },
-    { COMMAND_REW, L"TvtTapeRewind", L"TvtTape: 巻き戻し" },
-    { COMMAND_PLAY_PAUSE, L"TvtTapePlayPause", L"TvtTape: 再生/一時停止" },
-    { COMMAND_STOP, L"TvtTapeStop", L"TvtTape: 停止" },
-    { COMMAND_FF, L"TvtTapeFastForward", L"TvtTape: 早送り" },
-    { COMMAND_RECORD, L"TvtTapeRecord", L"TvtTape: 録画開始/停止" },
+    { COMMAND_DEVICE_REOPEN, L"TvtTapeReopenDevice", L"デバイスを開き直す" },
+    { COMMAND_POWER, L"TvtTapePower", L"電源オン/オフ" },
+    { COMMAND_REW, L"TvtTapeRewind", L"巻き戻し" },
+    { COMMAND_PLAY_PAUSE, L"TvtTapePlayPause", L"再生/一時停止" },
+    { COMMAND_STOP, L"TvtTapeStop", L"停止" },
+    { COMMAND_FF, L"TvtTapeFastForward", L"早送り" },
+    { COMMAND_RECORD, L"TvtTapeRecord", L"録画開始/停止" },
 };
 
 CTvtTape *g_TimerOwner = nullptr;
@@ -297,7 +297,7 @@ bool CTvtTape::Initialize()
         if (!m_PipeControl.SendTsData(pData, size)) {
             static bool logged = false;
             if (!logged) {
-                m_pApp->AddLog(L"TvtTape: failed to send TS to BonDriver_Pipe data pipe", TVTest::LOG_TYPE_WARNING);
+                m_pApp->AddLog(L"failed to send TS to BonDriver_Pipe data pipe", TVTest::LOG_TYPE_WARNING);
                 logged = true;
             }
         }
@@ -313,12 +313,12 @@ bool CTvtTape::Initialize()
         m_VcrDevice.SetPreferredDeviceIndex(m_SelectedDeviceIndex);
         if (!m_VcrDevice.Open()) {
             m_StateText = L"デバイスのオープンに失敗しました";
-            m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
+            m_pApp->AddLog(L"デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
         }
         g_TimerOwner = this;
         m_TimerID = ::SetTimer(nullptr, 0, m_PollIntervalMs, TimerProc);
         if (!m_TimerID)
-            m_pApp->AddLog(L"TvtTape: ステータス監視タイマーの開始に失敗しました", TVTest::LOG_TYPE_WARNING);
+            m_pApp->AddLog(L"ステータス監視タイマーの開始に失敗しました", TVTest::LOG_TYPE_WARNING);
     } else {
         m_StateText = L"無効";
         m_TimeCodeText = L"--:--:--";
@@ -351,13 +351,13 @@ bool CTvtTape::OnPluginEnable(bool fEnable)
         m_VcrDevice.SetPreferredDeviceIndex(m_SelectedDeviceIndex);
         if (!m_VcrDevice.Open()) {
             m_StateText = L"デバイスのオープンに失敗しました";
-            m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
+            m_pApp->AddLog(L"デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
         }
         if (!m_TimerID) {
             g_TimerOwner = this;
             m_TimerID = ::SetTimer(nullptr, 0, m_PollIntervalMs, TimerProc);
             if (!m_TimerID)
-                m_pApp->AddLog(L"TvtTape: ステータス監視タイマーの開始に失敗しました", TVTest::LOG_TYPE_WARNING);
+                m_pApp->AddLog(L"ステータス監視タイマーの開始に失敗しました", TVTest::LOG_TYPE_WARNING);
         }
     } else {
         if (m_TimerID) {
@@ -651,7 +651,7 @@ bool CTvtTape::OnCommand(int commandId)
     switch (commandId) {
     case COMMAND_DEVICE_REOPEN:
         if (!ReopenDevice()) {
-            m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
+            m_pApp->AddLog(L"デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
         }
         return true;
 
@@ -798,9 +798,9 @@ void CTvtTape::MonitorRecordingBitrate()
         m_VcrDevice.Stop();
         m_PipeControl.Purge();
         if (m_pApp->StopRecord()) {
-            m_pApp->AddLog(L"TvtTape: 録画停止 (ビットレート0Mbpsが5秒経過)", TVTest::LOG_TYPE_WARNING);
+            m_pApp->AddLog(L"録画停止 (ビットレート0Mbpsが5秒経過)", TVTest::LOG_TYPE_WARNING);
         } else {
-            m_pApp->AddLog(L"TvtTape: 録画停止に失敗しました (ビットレート0Mbpsが5秒経過時)", TVTest::LOG_TYPE_WARNING);
+            m_pApp->AddLog(L"録画停止に失敗しました (ビットレート0Mbpsが5秒経過時)", TVTest::LOG_TYPE_WARNING);
         }
         m_RecordStopTriggered = true;
     }
@@ -852,7 +852,7 @@ bool CTvtTape::ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd)
     m_SelectedDeviceIndex = selected;
     SaveSettings();
     if (!ReopenDevice()) {
-        m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
+        m_pApp->AddLog(L"デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
         return false;
     }
 
@@ -879,7 +879,7 @@ void CTvtTape::ExecuteTransportAction(int action)
         if (!m_VcrDevice.IsOpen()) {
             m_VcrDevice.SetPreferredDeviceIndex(m_SelectedDeviceIndex);
             if (!m_VcrDevice.Open()) {
-                m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました（電源制御用）", TVTest::LOG_TYPE_WARNING);
+                m_pApp->AddLog(L"デバイスのオープンに失敗しました（電源制御用）", TVTest::LOG_TYPE_WARNING);
                 break;
             }
         }
@@ -888,17 +888,17 @@ void CTvtTape::ExecuteTransportAction(int action)
             TVTest::RecordStatusInfo recordStatus = {};
             if (m_pApp->GetRecordStatus(&recordStatus) && recordStatus.Status == TVTest::RECORD_STATUS_RECORDING) {
                 if (!m_pApp->StopRecord()) {
-                    m_pApp->AddLog(L"TvtTape: 電源オフ前の録画停止に失敗しました", TVTest::LOG_TYPE_WARNING);
+                    m_pApp->AddLog(L"電源オフ前の録画停止に失敗しました", TVTest::LOG_TYPE_WARNING);
                 }
             }
             m_VcrDevice.Stop();
             m_PipeControl.Purge();
             if (!m_VcrDevice.SetDevicePower(false)) {
-                m_pApp->AddLog(L"TvtTape: デバイスの電源オフに失敗しました", TVTest::LOG_TYPE_WARNING);
+                m_pApp->AddLog(L"デバイスの電源オフに失敗しました", TVTest::LOG_TYPE_WARNING);
             }
         } else {
             if (!m_VcrDevice.SetDevicePower(true)) {
-                m_pApp->AddLog(L"TvtTape: デバイスの電源オンに失敗しました", TVTest::LOG_TYPE_WARNING);
+                m_pApp->AddLog(L"デバイスの電源オンに失敗しました", TVTest::LOG_TYPE_WARNING);
             }
         }
         break;
@@ -946,24 +946,24 @@ void CTvtTape::ExecuteTransportAction(int action)
                 m_VcrDevice.Stop();
                 m_PipeControl.Purge();
                 if (!m_pApp->StopRecord()) {
-                    m_pApp->AddLog(L"TvtTape: 録画停止に失敗しました", TVTest::LOG_TYPE_WARNING);
+                    m_pApp->AddLog(L"録画停止に失敗しました", TVTest::LOG_TYPE_WARNING);
                 }
             } else {
                 if (!m_VcrDevice.IsOpen()) {
                     m_VcrDevice.SetPreferredDeviceIndex(m_SelectedDeviceIndex);
                     if (!m_VcrDevice.Open()) {
-                        m_pApp->AddLog(L"TvtTape: 録画用の VCR デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
+                        m_pApp->AddLog(L"録画用の VCR デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
                         break;
                     }
                 }
                 if (!m_VcrDevice.IsDevicePowerOn() && !m_VcrDevice.SetDevicePower(true)) {
-                    m_pApp->AddLog(L"TvtTape: 録画用の VCR デバイスの電源オンに失敗しました", TVTest::LOG_TYPE_WARNING);
+                    m_pApp->AddLog(L"録画用の VCR デバイスの電源オンに失敗しました", TVTest::LOG_TYPE_WARNING);
                     break;
                 }
                 m_VcrDevice.Play();
                 m_PipeControl.SetPaused(false);
                 if (!m_pApp->StartRecord()) {
-                    m_pApp->AddLog(L"TvtTape: 録画開始に失敗しました", TVTest::LOG_TYPE_WARNING);
+                    m_pApp->AddLog(L"録画開始に失敗しました", TVTest::LOG_TYPE_WARNING);
                 }
             }
         }
