@@ -723,12 +723,12 @@ bool CTvtTape::ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd)
     if (!hMenu)
         return false;
 
-    ::AppendMenuW(hMenu, MF_STRING | (m_SelectedDeviceIndex < 0 ? MF_CHECKED : 0), MENU_DEVICE_AUTO, L"自動選択");
+    ::AppendMenuW(hMenu, MF_STRING, MENU_DEVICE_REOPEN, L"デバイスを開き直す");
     ::AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
 
     for (size_t i = 0; i < m_DeviceNames.size(); ++i) {
         UINT menuFlags = MF_STRING;
-        if (m_SelectedDeviceIndex == static_cast<int>(i))
+        if (m_SelectedDeviceIndex == static_cast<int>(i) || (m_SelectedDeviceIndex < 0 && i == 0))
             menuFlags |= MF_CHECKED;
         ::AppendMenuW(hMenu, menuFlags, MENU_DEVICE_FIRST + static_cast<UINT>(i), m_DeviceNames[i].c_str());
     }
@@ -736,10 +736,18 @@ bool CTvtTape::ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd)
     const UINT command = ::TrackPopupMenu(hMenu, TPM_NONOTIFY | TPM_RETURNCMD | flags, pt.x, pt.y, 0, hwnd, nullptr);
     ::DestroyMenu(hMenu);
 
+    if (command == MENU_DEVICE_REOPEN) {
+        if (!ReopenDevice()) {
+            m_pApp->AddLog(L"TvtTape: デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
+            return false;
+        }
+
+        UpdateStatus();
+        return true;
+    }
+
     int selected = m_SelectedDeviceIndex;
-    if (command == MENU_DEVICE_AUTO) {
-        selected = -1;
-    } else if (command >= MENU_DEVICE_FIRST) {
+    if (command >= MENU_DEVICE_FIRST) {
         selected = static_cast<int>(command - MENU_DEVICE_FIRST);
     }
 

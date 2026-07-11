@@ -44,7 +44,7 @@ private:
     };
 
     enum {
-        MENU_DEVICE_AUTO = 1,
+        MENU_DEVICE_REOPEN = 1,
         MENU_DEVICE_FIRST = 100,
     };
 
