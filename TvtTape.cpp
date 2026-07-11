@@ -50,7 +50,8 @@ enum TransportIconIndex {
 };
 
 enum CommandId {
-    COMMAND_DEVICE_REOPEN = 1,
+    COMMAND_DEVICE_MENU = 1,
+    COMMAND_DEVICE_REOPEN,
     COMMAND_POWER,
     COMMAND_REW,
     COMMAND_PLAY_PAUSE,
@@ -60,6 +61,7 @@ enum CommandId {
 };
 
 constexpr TVTest::CommandInfo kCommandList[] = {
+    { COMMAND_DEVICE_MENU, L"TvtTapeDeviceMenu", L"デバイスメニュー表示" },
     { COMMAND_DEVICE_REOPEN, L"TvtTapeReopenDevice", L"デバイスを開き直す" },
     { COMMAND_POWER, L"TvtTapePower", L"電源オン/オフ" },
     { COMMAND_REW, L"TvtTapeRewind", L"巻き戻し" },
@@ -149,7 +151,7 @@ public:
         POINT pt = {};
         UINT flags = 0;
         if (GetMenuPos(&pt, &flags))
-            m_pOwner->ShowDeviceMenuAt(pt, flags | TPM_RIGHTBUTTON, m_pStatus->GetHandle());
+            m_pOwner->ExecuteCommandById(COMMAND_DEVICE_MENU, &pt, flags | TPM_RIGHTBUTTON);
     }
 
 private:
@@ -646,9 +648,41 @@ void CTvtTape::RegisterCommands()
     m_pApp->RegisterCommand(kCommandList, _countof(kCommandList));
 }
 
-bool CTvtTape::OnCommand(int commandId)
+bool CTvtTape::OnCommand(int ID)
+{
+    return ExecuteCommandById(ID);
+}
+
+bool CTvtTape::ExecuteCommandById(int commandId, const POINT *pt, UINT flags)
 {
     switch (commandId) {
+    case COMMAND_DEVICE_MENU:
+        {
+            POINT menuPt;
+            UINT menuFlags;
+            HWND menuHwnd = m_pApp->GetAppWindow();
+            
+            if (pt && flags) {
+                menuPt = *pt;
+                menuFlags = flags;
+            
+                TVTest::StatusItemGetInfo info;
+                info.Mask = TVTest::STATUS_ITEM_GET_INFO_MASK_HWND;
+                info.ID = 1;
+                if (m_pApp->GetStatusItemInfo(&info)) {
+                    menuHwnd = info.hwnd;
+                }
+            } else {
+                // フォールバック：アプリウィンドウの左上端を使用
+                menuPt.x = 0;
+                menuPt.y = 0;
+                menuFlags = TPM_RIGHTBUTTON;
+                ::ClientToScreen(menuHwnd, &menuPt);
+            }
+            ShowDeviceMenuAt(menuPt, menuFlags, menuHwnd);
+        }
+        return true;
+
     case COMMAND_DEVICE_REOPEN:
         if (!ReopenDevice()) {
             m_pApp->AddLog(L"デバイスのオープンに失敗しました", TVTest::LOG_TYPE_WARNING);
@@ -858,18 +892,6 @@ bool CTvtTape::ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd)
 
     UpdateStatus();
     return true;
-}
-
-bool CTvtTape::ExecuteCommandById(int commandId)
-{
-    if (commandId == 0)
-        return false;
-
-    const wchar_t *commandText = GetCommandTextById(commandId);
-    if (commandText && m_pApp->DoCommand(commandText))
-        return true;
-
-    return OnCommand(commandId);
 }
 
 void CTvtTape::ExecuteTransportAction(int action)

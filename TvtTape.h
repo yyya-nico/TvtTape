@@ -23,14 +23,14 @@ public:
     bool Initialize() override;
     bool Finalize() override;
     bool OnPluginEnable(bool fEnable) override;
-    bool OnCommand(int commandId) override;
+    bool OnCommand(int ID) override;
     bool OnStatusItemDraw(TVTest::StatusItemDrawInfo *pInfo) override;
     bool OnStatusItemMouseEvent(TVTest::StatusItemMouseEventInfo *pInfo) override;
     bool OnStatusItemNotify(TVTest::StatusItemEventInfo *pInfo) override;
 
     bool ShowDeviceMenuAt(const POINT &pt, UINT flags, HWND hwnd);
     void ExecuteTransportAction(int action);
-    bool ExecuteCommandById(int commandId);
+    bool ExecuteCommandById(int commandId, const POINT *pt = nullptr, UINT flags = 0);
 
     TVTest::CTVTestApp *GetApp() const { return m_pApp; }
     const std::wstring &GetStateText() const { return m_StateText; }
