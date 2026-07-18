@@ -1,5 +1,5 @@
 # TvtTape プラグイン
-D-VHS 機器を制御し、TS ストリームを BonDriver_Pipe.dll へ出力する TVTest プラグインです。
+IEEE1394 で接続された D-VHS 機器を制御し、機器からの TS ストリームを BonDriver_Pipe.dll へ出力する TVTest プラグインです。
 
 ## 構成
 
